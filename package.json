@@ -35,6 +35,8 @@
       "preload.js",
       "index.html",
       "styles.css",
+      "xknob.js",
+      "xknob.css",
       "package.json",
       "node_modules/python-shell/**/*",
       "!python",
