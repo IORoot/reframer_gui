@@ -1,7 +1,6 @@
 # Electron build output
 dist/
 out/
-build/
 *.dmg
 *.zip
 *.exe
