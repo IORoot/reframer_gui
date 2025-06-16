@@ -2,6 +2,9 @@
 <html>
 <head>
     <title>RF-1 Reframer - Video Reframing Tool</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
     <link href="./styles.css" rel="stylesheet">
     <script src="./xknob.js"></script>
 </head>
@@ -188,7 +191,7 @@
                         <feGaussianBlur stdDeviation="0.25" />
                         <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" />
                         <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.1 0" />
-                        <feBlend mode="normal" in2="effect1_innerShadow_459_2080" result="effect2_innerShadow_459_2080" />
+                        <feBlend mode="normal" in2="shape" result="effect2_innerShadow_459_2080" />
                     </filter>
                     <filter id="filter2_di_459_2080" x="12.282" y="12.2821" width="23.4359" height="23.4359"
                         filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
@@ -206,7 +209,7 @@
                         <feOffset dx="6" dy="6" />
                         <feGaussianBlur stdDeviation="6" />
                         <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" />
-                        <feColorMatrix type="matrix" values="0 0 0 0 0.545098 0 0 0 0 0.145098 0 0 0 0 0.105882 0 0 0 0.9 0" />
+                        <feColorMatrix type="matrix" values="0 0 0 0 0.252329 0 0 0 0 0.252329 0 0 0 0 0.252329 0 0 0 0.9 0" />
                         <feBlend mode="normal" in2="shape" result="effect2_innerShadow_459_2080" />
                     </filter>
                     <filter id="filter3_i_459_2080" x="18.4359" y="1" width="9.1282" height="23.4872" filterUnits="userSpaceOnUse"
@@ -218,7 +221,7 @@
                         <feOffset dx="4" dy="4" />
                         <feGaussianBlur stdDeviation="3" />
                         <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" />
-                        <feColorMatrix type="matrix" values="0 0 0 0 0.545098 0 0 0 0 0.145098 0 0 0 0 0.105882 0 0 0 0.81 0" />
+                        <feColorMatrix type="matrix" values="0 0 0 0 0.242695 0 0 0 0 0.242695 0 0 0 0 0.242695 0 0 0 0.81 0" />
                         <feBlend mode="normal" in2="shape" result="effect1_innerShadow_459_2080" />
                     </filter>
                     <linearGradient id="paint0_linear_459_2080" x1="7.0177" y1="7.37168" x2="34.4513" y2="34.8053"
@@ -233,20 +236,47 @@
                     </linearGradient>
                     <radialGradient id="paint2_radial_459_2080" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse"
                         gradientTransform="translate(26.641 26.641) rotate(-135) scale(9.91158)">
-                        <stop stop-color="#FEDAC3" />
-                        <stop offset="0.484375" stop-color="#FF9C57" />
-                        <stop offset="1" stop-color="#F9601B" />
+                        <stop stop-color="#C6C6C6" />
+                        <stop offset="0.484375" stop-color="#535353" />
+                        <stop offset="1" stop-color="#232323" />
                     </radialGradient>
                     <radialGradient id="paint3_radial_459_2080" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse"
                         gradientTransform="translate(23.5641 11.2564) rotate(-90) scale(6.66667 4)">
                         <stop stop-color="white" />
-                        <stop offset="0.484375" stop-color="#FF9C57" />
-                        <stop offset="1" stop-color="#F9601B" />
+                        <stop offset="0.484375" stop-color="#555555" />
+                        <stop offset="1" stop-color="#222222" />
                     </radialGradient>
                 </defs>
             </symbol>
 
+            <!-- Toggle button icons -->
+            <symbol id="face-detection-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+            </symbol>
 
+            <symbol id="weighted-center-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </symbol>
+
+            <symbol id="blend-saliency-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </symbol>
+
+            <symbol id="smoothing-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </symbol>
+
+            <symbol id="debug-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M20 8h-2.81c-.45-.78-1.07-1.45-1.82-1.96L17 4.41 15.59 3l-2.17 2.17C12.96 5.06 12.49 5 12 5c-.49 0-.96.06-1.41.17L8.41 3 7 4.41l1.62 1.63C7.88 6.55 7.26 7.22 6.81 8H4v2h2.09c-.05.33-.09.66-.09 1v1H4v2h2v1c0 .34.04.67.09 1H4v2h2.81c1.04 1.79 2.97 3 5.19 3s4.15-1.21 5.19-3H20v-2h-2.09c.05-.33.09-.66.09-1v-1h2v-2h-2v-1c0-.34-.04-.67-.09-1H20V8zm-4 4v3c0 2.21-1.79 4-4 4s-4-1.79-4-4v-3c0-2.21 1.79-4 4-4s4 1.79 4 4z"/>
+            </symbol>
+
+            <symbol id="help-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/>
+            </symbol>
+
+            <symbol id="recursive-search-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+            </symbol>
         </defs>
     </svg>
 
@@ -403,8 +433,11 @@
                             <button id="selectBatchFiles" class="btn btn-primary flex-1">Select Multiple Files</button>
                             <button id="selectBatchFolder" class="btn btn-primary flex-1">Select Folder</button>
                             <div class="flex items-center gap-2 px-3 bg-gray-50 rounded border border-gray-200">
-                                <input type="checkbox" id="recursiveSearch" class="m-0">
-                                <label for="recursiveSearch" class="text-sm text-gray-600">Search subfolders</label>
+                                <label class="toggle-button" for="recursiveSearch">
+                                    <input type="checkbox" id="recursiveSearch" class="m-0">
+                                    <svg><use href="#recursive-search-icon"></use></svg>
+                                </label>
+                                <label for="recursiveSearch" class="text-sm text-gray-600 cursor-pointer">Search subfolders</label>
                             </div>
                         </div>
 
@@ -501,7 +534,7 @@
                                     <span class="text-sm text-gray-600 italic">(Process every Nth frame)</span>
                                 </div>
                                 <div class="flex items-center gap-2.5">
-                                    <label for="confThreshold" class="min-w-[150px] font-medium">Confidence Threshold:</label>
+                                    <label for="confThreshold" class="min-w-[150px] font-medium">Confidence:</label>
                                     <input type="number" id="confThreshold" value="0.4" step="0.1" min="0.1" max="1.0" class="input w-24">
                                     <span class="text-sm text-gray-600 italic">(0.0 to 1.0)</span>
                                 </div>
@@ -568,16 +601,25 @@
                         <div id="features-tab" class="tab-pane hidden">
                             <div class="space-y-1.5">
                                 <div class="flex items-center gap-2.5">
-                                    <input type="checkbox" id="faceDetection" class="m-0">
-                                    <label for="faceDetection" class="ml-1.5">Face Detection</label>
+                                    <label class="toggle-button" for="faceDetection">
+                                        <input type="checkbox" id="faceDetection" class="m-0">
+                                        <svg><use href="#face-detection-icon"></use></svg>
+                                    </label>
+                                    <label for="faceDetection" class="ml-1.5 cursor-pointer">Face Detection</label>
                                 </div>
                                 <div class="flex items-center gap-2.5">
-                                    <input type="checkbox" id="weightedCenter" class="m-0">
-                                    <label for="weightedCenter" class="ml-1.5">Weighted Center</label>
+                                    <label class="toggle-button" for="weightedCenter">
+                                        <input type="checkbox" id="weightedCenter" class="m-0">
+                                        <svg><use href="#weighted-center-icon"></use></svg>
+                                    </label>
+                                    <label for="weightedCenter" class="ml-1.5 cursor-pointer">Weighted Center</label>
                                 </div>
                                 <div class="flex items-center gap-2.5">
-                                    <input type="checkbox" id="blendSaliency" class="m-0">
-                                    <label for="blendSaliency" class="ml-1.5">Blend Saliency</label>
+                                    <label class="toggle-button" for="blendSaliency">
+                                        <input type="checkbox" id="blendSaliency" class="m-0">
+                                        <svg><use href="#blend-saliency-icon"></use></svg>
+                                    </label>
+                                    <label for="blendSaliency" class="ml-1.5 cursor-pointer">Blend Saliency</label>
                                 </div>
                             </div>
                         </div>
@@ -586,8 +628,11 @@
                         <div id="smoothing-tab" class="tab-pane hidden">
                             <div class="space-y-2.5">
                                 <div class="flex items-center gap-2.5">
-                                    <input type="checkbox" id="applySmoothing" checked class="m-0">
-                                    <label for="applySmoothing" class="ml-1.5">Apply Temporal Smoothing</label>
+                                    <label class="toggle-button" for="applySmoothing">
+                                        <input type="checkbox" id="applySmoothing" checked class="m-0">
+                                        <svg><use href="#smoothing-icon"></use></svg>
+                                    </label>
+                                    <label for="applySmoothing" class="ml-1.5 cursor-pointer">Apply Temporal Smoothing</label>
                                 </div>
                                 <div class="flex items-center gap-2.5">
                                     <label for="smoothingWindow" class="min-w-[150px] font-medium">Smoothing Window:</label>
@@ -611,12 +656,18 @@
                         <div id="debug-tab" class="tab-pane hidden">
                             <div class="space-y-1.5">
                                 <div class="flex items-center gap-2.5">
-                                    <input type="checkbox" id="debug" class="m-0">
-                                    <label for="debug" class="ml-1.5">Debug Mode</label>
+                                    <label class="toggle-button" for="debug">
+                                        <input type="checkbox" id="debug" class="m-0">
+                                        <svg><use href="#debug-icon"></use></svg>
+                                    </label>
+                                    <label for="debug" class="ml-1.5 cursor-pointer">Debug Mode</label>
                                 </div>
                                 <div class="flex items-center gap-2.5">
-                                    <input type="checkbox" id="showHelp" class="m-0">
-                                    <label for="showHelp" class="ml-1.5">Show Help Messages</label>
+                                    <label class="toggle-button" for="showHelp">
+                                        <input type="checkbox" id="showHelp" class="m-0">
+                                        <svg><use href="#help-icon"></use></svg>
+                                    </label>
+                                    <label for="showHelp" class="ml-1.5 cursor-pointer">Show Help Messages</label>
                                 </div>
                             </div>
                         </div>
@@ -1692,6 +1743,36 @@
 
         // Initialize with single video input tab
         switchInputTypeTab('single');
+
+        // Toggle button functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggleButtons = document.querySelectorAll('.toggle-button');
+            
+            toggleButtons.forEach(toggleButton => {
+                const checkbox = toggleButton.querySelector('input[type="checkbox"]');
+                
+                // Set initial state
+                if (checkbox.checked) {
+                    toggleButton.classList.add('active');
+                }
+                
+                // Handle checkbox change
+                checkbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        toggleButton.classList.add('active');
+                    } else {
+                        toggleButton.classList.remove('active');
+                    }
+                });
+                
+                // Handle button click
+                toggleButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    checkbox.checked = !checkbox.checked;
+                    checkbox.dispatchEvent(new Event('change'));
+                });
+            });
+        });
 
         // Sync <x-knob> and input
         (function() {
