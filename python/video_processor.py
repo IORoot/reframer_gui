@@ -6,6 +6,15 @@ import sys
 import platform
 from pathlib import Path
 
+# Use absolute imports that work in both development and bundled environments
+try:
+    # Try direct import first (when in same directory)
+    from ffmpeg_manager import get_ffmpeg_path
+except ImportError:
+    # Fallback to python directory import (when bundled)
+    sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+    from python.ffmpeg_manager import get_ffmpeg_path
+
 def get_app_path():
     """Get the path to the application's resources directory."""
     if getattr(sys, 'frozen', False):
@@ -39,21 +48,6 @@ def get_app_path():
             return current_path
         print(f"Running in normal Python environment, using current directory: {current_path}")
         return current_path
-
-def get_ffmpeg_path():
-    """Get the path to the ffmpeg executable."""
-    app_path = get_app_path()
-    # Look for ffmpeg in the Resources directory
-    ffmpeg_path = app_path / 'ffmpeg' / 'ffmpeg'
-    print(f"Looking for ffmpeg at: {ffmpeg_path}")
-    print(f"ffmpeg exists: {ffmpeg_path.exists()}")
-    print(f"Directory contents of {app_path / 'ffmpeg'}: {list((app_path / 'ffmpeg').glob('*')) if (app_path / 'ffmpeg').exists() else 'Directory does not exist'}")
-    
-    if not ffmpeg_path.exists():
-        print("Falling back to system ffmpeg")
-        return 'ffmpeg'
-    print(f"Using bundled ffmpeg: {ffmpeg_path}")
-    return str(ffmpeg_path)
 
 class VideoProcessor:
     def __init__(self):

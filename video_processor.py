@@ -2,6 +2,18 @@ import cv2
 import numpy as np
 import os
 import subprocess
+import sys
+import platform
+from pathlib import Path
+
+# Use absolute imports that work in both development and bundled environments
+try:
+    # Try direct import first (when in same directory)
+    from ffmpeg_manager import get_ffmpeg_path
+except ImportError:
+    # Fallback to python directory import (when bundled)
+    sys.path.insert(0, os.path.dirname(__file__))
+    from python.ffmpeg_manager import get_ffmpeg_path
 
 class VideoProcessor:
     def __init__(self):
@@ -10,6 +22,8 @@ class VideoProcessor:
         self.frames = None
         self.current_frame_idx = 0
         self.video_info = {}
+        self.ffmpeg_path = get_ffmpeg_path()
+        print(f"VideoProcessor initialized with ffmpeg path: {self.ffmpeg_path}")
     
     def load_video(self, video_path):
         """Load video file and extract basic information."""
@@ -64,7 +78,7 @@ class VideoProcessor:
         temp_h264_output = "temp_h264_output.mp4"
 
         ffmpeg_command = [
-            "ffmpeg", "-y", "-i", input_path,
+            self.ffmpeg_path, "-y", "-i", input_path,
             "-c:v", "libx264", "-preset", "ultrafast", "-crf", "28",
             "-c:a", "aac", "-b:a", "128k",
             temp_h264_output
@@ -84,7 +98,7 @@ class VideoProcessor:
 
         # Extract audio from the original video
         extract_cmd = [
-            "ffmpeg", "-i", original_video, "-q:a", "0", "-map", "0:a?", audio_path, "-y"
+            self.ffmpeg_path, "-i", original_video, "-q:a", "0", "-map", "0:a?", audio_path, "-y"
         ]
         result = subprocess.run(extract_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
@@ -94,7 +108,7 @@ class VideoProcessor:
 
         # Merge extracted audio into a temporary file
         merge_cmd = [
-            "ffmpeg", "-i", video_path, "-i", audio_path, 
+            self.ffmpeg_path, "-i", video_path, "-i", audio_path, 
             "-c:v", "copy", "-c:a", "aac", "-strict", "experimental", temp_output, "-y"
         ]
         result = subprocess.run(merge_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)

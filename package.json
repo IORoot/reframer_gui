@@ -64,11 +64,6 @@
         "filter": ["**/*.py", "!**/*.mp4"]
       },
       {
-        "from": "build/ffmpeg",
-        "to": "ffmpeg",
-        "filter": ["**/*"]
-      },
-      {
         "from": "requirements.txt",
         "to": "python/requirements.txt"
       }
