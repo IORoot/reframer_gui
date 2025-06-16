@@ -250,7 +250,7 @@
         </defs>
     </svg>
 
-    <div class="flex w-full h-full">
+    <div class="flex w-full h-full m-4">
         <!-- Left side: Video preview -->
         <div class="w-2/3 h-full p-5 flex flex-col">
             <div class="flex items-center gap-4 mb-4">
@@ -1708,6 +1708,23 @@
             knob.value = input.value;
           });
         })();
+
+        // Add calculate ratio button handler
+        document.getElementById('calculateRatio').addEventListener('click', function() {
+            const width = parseFloat(document.getElementById('widthInput').value);
+            const height = parseFloat(document.getElementById('heightInput').value);
+            
+            if (!isNaN(width) && !isNaN(height) && height !== 0) {
+                const ratio = width / height;
+                const knob = document.getElementById('aspectRatioDial');
+                const input = document.getElementById('targetRatio');
+                
+                // Update both knob and input
+                knob.value = ratio;
+                input.value = ratio;
+                input.dispatchEvent(new Event('input', {bubbles:true}));
+            }
+        });
     </script>
 </body>
 </html>
