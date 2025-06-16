@@ -30,6 +30,75 @@
 
 .debug-panel .success {
     @apply text-green-400;
+}
+
+/* Apply Silkscreen font and blue-50 background to all input elements */
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+input[type="tel"],
+input[type="url"],
+textarea,
+select {
+    font-family: 'Silkscreen', cursive !important;
+    background-color: rgb(239 246 255) !important; /* blue-50 */
+}
+
+/* Ensure the blue-50 background is applied even when inputs have existing background classes */
+.input {
+    font-family: 'Silkscreen', cursive !important;
+    background-color: rgb(239 246 255) !important; /* blue-50 */
+}
+
+/* Toggle button styles */
+.toggle-button {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border: 2px solid #d1d5db;
+    border-radius: 8px;
+    background-color: #f9fafb;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    overflow: hidden;
+}
+
+.toggle-button:hover {
+    border-color: #9ca3af;
+    background-color: #f3f4f6;
+}
+
+.toggle-button.active {
+    border-color: #3b82f6;
+    background-color: #dbeafe;
+}
+
+.toggle-button svg {
+    width: 24px;
+    height: 24px;
+    color: #6b7280;
+    transition: color 0.2s ease-in-out;
+}
+
+.toggle-button.active svg {
+    color: #3b82f6;
+}
+
+.toggle-button:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Hide original checkboxes */
+.toggle-button input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
 } 
 
 
