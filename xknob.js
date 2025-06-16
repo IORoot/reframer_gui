@@ -324,8 +324,8 @@ if (!window.XKnob) {
 				this._max = 1;
 				this._step = 0.01;
 				this._value = 0;
-				this._disabled = false;
-				this._readonly = false;
+						this._disabled = false;
+						this._readonly = false;
 				this._dragging = false;
 				this._center = 24;
 				this._radius = 22;
@@ -658,25 +658,25 @@ if (!window.XKnob) {
 				const deg = ((this._value - this._min) / (this._max - this._min)) * 360; // in degrees
 				this._indicatorGroup.innerHTML = `
 					<g transform="rotate(${deg}, ${centerX}, ${centerY})">
-						<mask id="mask0_427_2080" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="53" y="49" width="19" height="29">
+						<mask id="mask0_427_2080" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="24" y="20" width="19" height="29">
 							<path id="Indent Mask"
-								d="M62.3307 49C63.6417 49.0001 64.7047 50.063 64.7047 51.374V59.5127C64.7047 59.8485 64.8902 60.1803 65.2092 60.2854C68.6582 61.4222 71.1481 64.6702 71.1481 68.5C71.1481 73.2761 67.2757 77.1475 62.4996 77.1475C57.7237 77.1473 53.8522 73.2759 53.8522 68.5C53.8522 64.8182 56.1535 61.6751 59.3958 60.4277C59.756 60.2892 59.9567 59.8986 59.9567 59.5127V51.374C59.9567 50.0629 61.0196 49 62.3307 49Z"
+								d="M33.3307 20C34.6417 20.0001 35.7047 21.063 35.7047 22.374V30.5127C35.7047 30.8485 35.8902 31.1803 36.2092 31.2854C39.6582 32.4222 42.1481 35.6702 42.1481 39.5C42.1481 44.2761 38.2757 48.1475 33.4996 48.1475C28.7237 48.1473 24.8522 44.2759 24.8522 39.5C24.8522 35.8182 27.1535 32.6751 30.3958 31.4277C30.756 31.2892 30.9567 30.8986 30.9567 30.5127V22.374C30.9567 21.0629 32.0196 20 33.3307 20Z"
 								fill="black" />
 						</mask>
 						<g mask="url(#mask0_427_2080)">
 							<g id="Circular Indent" filter="url(#filter3_di_427_2080)">
-								<circle cx="62.5" cy="68.5" r="8.64783" fill="url(#paint2_radial_427_2080)" />
+								<circle cx="33" cy="39.5" r="8.64783" fill="url(#paint2_radial_427_2080)" />
 							</g>
 							<g id="Line">
-								<mask id="mask1_427_2080" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="59" y="49" width="6" height="16">
-									<rect id="Line Mask" x="59.9565" y="49" width="4.74783" height="15.2609" rx="2.37391" fill="url(#paint3_linear_427_2080)" />
+								<mask id="mask1_427_2080" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="30" y="20" width="6" height="16">
+									<rect id="Line Mask" x="30.9565" y="20" width="4.74783" height="15.2609" rx="2.37391" fill="url(#paint3_linear_427_2080)" />
 								</mask>
 								<g mask="url(#mask1_427_2080)">
 									<g id="Rectangle 2" filter="url(#filter4_f_427_2080)">
-										<rect x="59.2782" y="46.9652" width="6.10435" height="16.6174" fill="url(#paint4_linear_427_2080)" />
+										<rect x="30.2782" y="17.9652" width="6.10435" height="16.6174" fill="url(#paint4_linear_427_2080)" />
 									</g>
 									<g id="Rectangle 1" filter="url(#filter5_f_427_2080)">
-										<rect x="62.6695" y="46.9652" width="6.78261" height="14.5826" fill="#FFA96C" />
+										<rect x="33.6695" y="17.9652" width="6.78261" height="14.5826" fill="#FFA96C" />
 									</g>
 								</g>
 							</g>
