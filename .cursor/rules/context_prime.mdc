@@ -11,3 +11,6 @@ alwaysApply: true
 
 - Read the README.md for context
 - Do a git ls-files and use the .py .html .js .json .css .md files for context 
+
+[terminal]
+- you do not need to run the 'q' command to quit after running the terminal commands.

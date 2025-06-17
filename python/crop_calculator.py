@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+import os
 
 class CropCalculator:
     """Enhanced class for calculating optimal crop windows based on detected objects and saliency."""
@@ -17,6 +18,7 @@ class CropCalculator:
                  face_detection=False,
                  weighted_center=False,
                  blend_saliency=False,
+                 input_video_path=None,
                 ):
         """
         Initialize the crop calculator with enhanced parameters.
@@ -30,6 +32,11 @@ class CropCalculator:
             motion_weight: Weight for object motion in importance calculation
             history_weight: Weight for historical crop positions (stability)
             saliency_weight: Weight for saliency map in importance calculation
+            debug: Enable debug logging
+            face_detection: Enable face detection
+            weighted_center: Use weighted center calculation
+            blend_saliency: Blend saliency with object detection
+            input_video_path: Path to input video (for debug log location)
         """
         self.target_ratio = target_ratio
         self.padding_ratio = padding_ratio
@@ -42,6 +49,7 @@ class CropCalculator:
         self.face_detection = face_detection
         self.weighted_center = weighted_center
         self.blend_saliency = blend_saliency
+        self.input_video_path = input_video_path
         
         # Enhanced class weights with more categories and higher contrast
         self.class_weights = class_weights or {
@@ -109,7 +117,16 @@ class CropCalculator:
             if objects and objects[0]['box'] is not None:
                 if self.debug:
                     print(f"✂️ Inputs Box: [x={objects[0]['box'][0]}, y={objects[0]['box'][1]}, w={objects[0]['box'][2]}, h={objects[0]['box'][3]}], confidence: {objects[0]['confidence']:.2f}")
-                    with open("debug_logs/log2a_cropinputs.txt", "a") as f:
+                    
+                    # Use the same directory as the input video for debug logs
+                    if self.input_video_path:
+                        input_dir = os.path.dirname(os.path.abspath(self.input_video_path))
+                        debug_folder = os.path.join(input_dir, "debug_logs")
+                    else:
+                        debug_folder = "debug_logs"
+                    
+                    os.makedirs(debug_folder, exist_ok=True)
+                    with open(os.path.join(debug_folder, "log2a_cropinputs.txt"), "a") as f:
                         f.write(f"Crop Inputs Box: [x={objects[0]['box'][0]}, y={objects[0]['box'][1]}, w={objects[0]['box'][2]}, h={objects[0]['box'][3]}], confidence: {objects[0]['confidence']:.2f}\n")
 
 
@@ -187,7 +204,16 @@ class CropCalculator:
 
         if self.debug:
             print(f"✂️ CropCalc Box: [x={x}, y={y}, w={crop_width}, h={crop_height}]")
-            with open("debug_logs/log2b_cropcalc.txt", "a") as f:
+            
+            # Use the same directory as the input video for debug logs
+            if self.input_video_path:
+                input_dir = os.path.dirname(os.path.abspath(self.input_video_path))
+                debug_folder = os.path.join(input_dir, "debug_logs")
+            else:
+                debug_folder = "debug_logs"
+            
+            os.makedirs(debug_folder, exist_ok=True)
+            with open(os.path.join(debug_folder, "log2b_cropcalc.txt"), "a") as f:
                 f.write(f"CropCalc Box: [x={x}, y={y}, w={crop_width}, h={crop_height}]\n")
         
         return current_crop

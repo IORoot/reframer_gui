@@ -14,7 +14,7 @@ class ObjectDetector:
 
 
 
-    def __init__(self, confidence_threshold=0.5, model_size='n', classes=[0], debug=False):
+    def __init__(self, confidence_threshold=0.5, model_size='n', classes=[0], debug=False, input_video_path=None):
         """
         Initialize YOLOv8 detector.
         
@@ -23,24 +23,36 @@ class ObjectDetector:
             model_size: YOLOv8 model size ('n', 's', 'm', 'l', 'x')
             classes: List of class IDs to detect (default: [0] for person)
             debug: Enable debug mode to create video with detection boxes
+            input_video_path: Path to input video (used to determine debug log location)
         """
         self.confidence_threshold = confidence_threshold
-        self.model = None
         self.model_size = model_size
-        self._initialize_model()
         self.classes = classes
         self.debug = debug
-        
-        # Debug video writer initialization
+        self.input_video_path = input_video_path
+        self.model = None
         self.debug_video_writer = None
         self.debug_video_path = None
         self.frame_count = 0
+        
+        # Initialize debug video if debug mode is enabled
         if self.debug:
             self._initialize_debug_video()
+        
+        # Initialize the model
+        self._initialize_model()
     
     def _initialize_debug_video(self):
         """Initialize debug video writer."""
-        debug_folder = "debug_logs"
+        # Determine debug folder location
+        if self.input_video_path:
+            # Use the directory of the input video
+            input_dir = os.path.dirname(os.path.abspath(self.input_video_path))
+            debug_folder = os.path.join(input_dir, "debug_logs")
+        else:
+            # Fallback to current directory
+            debug_folder = "debug_logs"
+        
         os.makedirs(debug_folder, exist_ok=True)
         
         timestamp = int(time.time())
@@ -215,7 +227,13 @@ class ObjectDetector:
             
             # Log detection details to text file
             if detections:
-                debug_folder = "debug_logs"
+                # Use the same directory as the input video for debug logs
+                if self.input_video_path:
+                    input_dir = os.path.dirname(os.path.abspath(self.input_video_path))
+                    debug_folder = os.path.join(input_dir, "debug_logs")
+                else:
+                    debug_folder = "debug_logs"
+                
                 os.makedirs(debug_folder, exist_ok=True)
                 for detection in detections:
                     with open(os.path.join(debug_folder, "log1_detections.txt"), "a") as f:
