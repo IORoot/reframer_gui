@@ -325,6 +325,10 @@ def main(args=None):
         fps=fps
     )
     
+    # Finalize debug video if debug mode is enabled
+    if args.debug:
+        detector.finalize_debug_video()
+    
     elapsed_time = time.time() - start_time
     print(f"Video processing completed in {elapsed_time:.2f} seconds")
     print(f"Output saved to: {args.output}")

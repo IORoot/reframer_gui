@@ -1778,35 +1778,35 @@
         // Initialize with single video input tab
         switchInputTypeTab('single');
 
-        // Toggle button functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const toggleButtons = document.querySelectorAll('.toggle-button');
+        // // Toggle button functionality
+        // document.addEventListener('DOMContentLoaded', function() {
+        //     const toggleButtons = document.querySelectorAll('.toggle-button');
             
-            toggleButtons.forEach(toggleButton => {
-                const checkbox = toggleButton.querySelector('input[type="checkbox"]');
+        //     toggleButtons.forEach(toggleButton => {
+        //         const checkbox = toggleButton.querySelector('input[type="checkbox"]');
                 
-                // Set initial state
-                if (checkbox.checked) {
-                    toggleButton.classList.add('active');
-                }
+        //         // Set initial state
+        //         if (checkbox.checked) {
+        //             toggleButton.classList.add('active');
+        //         }
                 
-                // Handle checkbox change
-                checkbox.addEventListener('change', function() {
-                    if (this.checked) {
-                        toggleButton.classList.add('active');
-                    } else {
-                        toggleButton.classList.remove('active');
-                    }
-                });
+        //         // Handle checkbox change
+        //         checkbox.addEventListener('change', function() {
+        //             if (this.checked) {
+        //                 toggleButton.classList.add('active');
+        //             } else {
+        //                 toggleButton.classList.remove('active');
+        //             }
+        //         });
                 
-                // Handle button click
-                toggleButton.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    checkbox.checked = !checkbox.checked;
-                    checkbox.dispatchEvent(new Event('change'));
-                });
-            });
-        });
+        //         // Handle button click
+        //         toggleButton.addEventListener('click', function(e) {
+        //             e.preventDefault();
+        //             checkbox.checked = !checkbox.checked;
+        //             checkbox.dispatchEvent(new Event('change'));
+        //         });
+        //     });
+        // });
 
         // Sync <x-knob> and input
         (function() {

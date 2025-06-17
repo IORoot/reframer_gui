@@ -1,0 +1,187 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+---
+description: Reframer Project Overview
+globs: 
+alwaysApply: true
+---
+
+# Reframer GUI - AI Video Reframing Tool
+
+## Project Overview
+Reframer is an AI-powered video reframing tool that automatically detects and tracks important content in videos, converting them between different aspect ratios while maintaining focus on key subjects. The project consists of an Electron-based GUI frontend and a Python backend for video processing.
+
+## Architecture
+- **Frontend**: Electron app with HTML/CSS/JavaScript interface
+- **Backend**: Python video processing with YOLOv8 object detection
+- **Communication**: IPC between Electron and Python via python-shell
+- **Video Processing**: OpenCV, FFmpeg for video manipulation
+
+## Key Technologies
+- **Frontend**: Electron, TailwindCSS, Vanilla JavaScript
+- **Backend**: Python, OpenCV, YOLOv8, NumPy
+- **Video**: FFmpeg for audio/video processing
+- **Build**: electron-builder, npm scripts
+
+## File Structure
+```
+reframer_gui/
+├── index.html              # Main GUI interface
+├── main.js                 # Electron main process
+├── preload.js              # Electron preload script
+├── styles.css              # Compiled TailwindCSS
+├── xknob.js                # Custom knob component
+├── python/                 # Python backend
+│   ├── main.py            # Main processing script
+│   ├── video_processor.py # Video handling
+│   ├── object_detector.py # YOLOv8 detection
+│   ├── object_tracker.py  # Object tracking
+│   ├── crop_calculator.py # Crop window calculation
+│   ├── smoothing.py       # Temporal smoothing
+│   └── requirements.txt   # Python dependencies
+├── src/                   # Source files
+│   └── styles.css         # TailwindCSS source
+├── docs/                  # Documentation
+└── package.json           # Node.js dependencies
+```
+
+## Core Functionality
+
+### Video Processing Pipeline
+1. **Object Detection**: YOLOv8 identifies people/objects in keyframes
+2. **Object Tracking**: Maintains object identity across frames
+3. **Crop Calculation**: Determines optimal crop window based on subjects
+4. **Interpolation**: Smooth transitions between keyframes
+5. **Temporal Smoothing**: Reduces jitter in crop movements
+6. **Video Generation**: Creates final output with target aspect ratio
+
+### GUI Features
+- Single video and batch processing modes
+- Real-time video preview (input/output)
+- Comprehensive settings panels (Basic, Detection, Cropping, Features, Smoothing, Debug)
+- Progress tracking and status updates
+- Debug output panel
+- Form persistence (localStorage)
+
+## Development Guidelines
+
+### Frontend (Electron/JavaScript)
+- Use TailwindCSS for styling
+- Follow Electron security best practices
+- Implement proper error handling for IPC calls
+- Use async/await for Python script execution
+- Maintain responsive UI during processing
+
+### Backend (Python)
+- Use OpenCV for video operations
+- Implement parallel processing with ThreadPoolExecutor
+- Follow YOLOv8 best practices for object detection
+- Use NumPy for efficient array operations
+- Implement proper resource cleanup
+
+### Code Style
+- **JavaScript**: ES6+, async/await, proper error handling
+- **Python**: PEP 8, type hints, docstrings
+- **HTML**: Semantic markup, accessibility
+- **CSS**: TailwindCSS utility classes
+
+## Key Components
+
+### Object Detection
+- YOLOv8 models (nano, small, medium, large, xlarge)
+- Configurable confidence thresholds
+- Object class filtering
+- Face detection integration
+
+### Crop Calculation
+- Multi-weight prioritization system
+- Saliency map integration
+- Padding and aspect ratio handling
+- Motion and history tracking
+
+### Smoothing
+- Moving average smoothing
+- Position and size inertia
+- Configurable smoothing windows
+- Responsiveness vs stability balance
+
+## Configuration Options
+
+### Basic Settings
+- Target aspect ratio (customizable)
+- Max workers (CPU cores)
+- Output filename
+
+### Detection Settings
+- Model size (n/s/m/l/x)
+- Skip frames (performance vs accuracy)
+- Confidence threshold
+- Object classes to track
+- Track count
+
+### Crop Settings
+- Padding ratio
+- Size/center/motion/history weights
+- Saliency weight
+
+### Feature Toggles
+- Face detection
+- Weighted center calculation
+- Saliency blending
+
+### Smoothing Settings
+- Temporal smoothing
+- Smoothing window size
+- Position/size inertia
+
+## Build and Deployment
+- Use `npm run build:mac` for macOS builds
+- Use `npm run build:win` for Windows builds
+- Use `npm run build:linux` for Linux builds
+- Python backend is bundled as extra resources
+- FFmpeg dependencies must be available
+
+## Testing Considerations
+- Test with various video formats and sizes
+- Verify object detection accuracy
+- Test batch processing functionality
+- Validate aspect ratio conversions
+- Check memory usage with large videos
+
+## Performance Optimization
+- Use appropriate skip_frames for video type
+- Balance model size vs processing speed
+- Optimize worker thread count
+- Implement proper memory management
+- Use efficient NumPy operations
+
+## Error Handling
+- Handle video file access errors
+- Manage Python script failures
+- Provide user-friendly error messages
+- Implement graceful degradation
+- Log errors for debugging
+
+## Security Considerations
+- Validate file paths and inputs
+- Sanitize user inputs
+- Use Electron security best practices
+- Implement proper IPC validation
+- Handle file system permissions
+
+## Documentation
+- Maintain up-to-date README
+- Document all configuration options
+- Provide usage examples
+- Include troubleshooting guide
+- Document API changes
+
+## Future Enhancements
+- GPU acceleration support
+- Additional detection models
+- Real-time preview during processing
+- Advanced cropping algorithms
+- Cloud processing options
