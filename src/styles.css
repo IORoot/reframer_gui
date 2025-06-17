@@ -11,6 +11,10 @@
     @apply bg-blue-600 text-white hover:bg-blue-700;
 }
 
+.btn-run {
+    @apply bg-green-600 text-white hover:bg-green-700;
+}
+
 .btn-secondary {
     @apply bg-gray-200 text-gray-800 hover:bg-gray-300;
 }
