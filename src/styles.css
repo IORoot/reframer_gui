@@ -99,6 +99,84 @@ select {
     position: absolute;
     opacity: 0;
     pointer-events: none;
+}
+
+/* Aspect ratio preset button styles */
+.aspect-ratio-preset {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 50px;
+    border: 2px solid #d1d5db;
+    border-radius: 8px;
+    background-color: #f9fafb;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    padding: 6px;
+    min-width: 60px;
+    flex: 1;
+    max-width: 120px;
+}
+
+.aspect-ratio-preset:hover {
+    border-color: #3b82f6;
+    background-color: #dbeafe;
+    transform: translateY(-1px);
+}
+
+.aspect-ratio-preset:active {
+    transform: translateY(0);
+}
+
+.aspect-ratio-preset svg {
+    color: #6b7280;
+    transition: color 0.2s ease-in-out;
+}
+
+.aspect-ratio-preset:hover svg {
+    color: #3b82f6;
+}
+
+.aspect-ratio-preset span {
+    color: #6b7280;
+    font-weight: 500;
+    transition: color 0.2s ease-in-out;
+}
+
+.aspect-ratio-preset:hover span {
+    color: #3b82f6;
+}
+
+.aspect-ratio-preset:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Responsive sizing */
+@media (min-width: 640px) {
+    .aspect-ratio-preset {
+        width: 90px;
+        height: 55px;
+        padding: 7px;
+    }
+}
+
+@media (min-width: 768px) {
+    .aspect-ratio-preset {
+        width: 100px;
+        height: 60px;
+        padding: 8px;
+    }
+}
+
+@media (min-width: 1024px) {
+    .aspect-ratio-preset {
+        width: 120px;
+        height: 60px;
+        padding: 8px;
+    }
 } 
 
 

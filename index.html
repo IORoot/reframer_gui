@@ -277,6 +277,23 @@
             <symbol id="recursive-search-icon" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
             </symbol>
+
+            <!-- Aspect ratio preset icons -->
+            <symbol id="square-ratio" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="4" y="4" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+            </symbol>
+
+            <symbol id="portrait-ratio" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="6" y="2" width="12" height="20" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+            </symbol>
+
+            <symbol id="vertical-ratio" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="7" y="2" width="10" height="20" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+            </symbol>
+
+            <symbol id="landscape-ratio" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="2" y="6" width="20" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+            </symbol>
         </defs>
     </svg>
 
@@ -488,17 +505,33 @@
                                 <div class="flex items-center gap-2.5">
                                     <label for="targetRatio" class="min-w-[150px] font-medium">Target Aspect Ratio:</label>
                                     <div class="flex items-center gap-2">
-                                        
-                                        
                                         <div class="bg-gradient-to-br from-[#CFCEDC] to-[#D4D2E0] rounded-md p-2 flex flex-col gap-2">
                                             <svg class="w-4 h-4 fill-black m-auto"><use href="#aspect-ratio"></use></svg>
                                             <x-knob svgsymbolid="simpleknob-orange" id="aspectRatioDial" min="-2.0" max="2.0" step="0.01" value="0.75" style="width:40px;height:40px;outline:none;"></x-knob>
                                         </div>
-
-
-                                        <input type="number" id="targetRatio" value="0.75" step="0.01" min="-2.0" max="2.0" class="input w-24">
+                                        <input type="number" id="targetRatio" value="0.75" step="0.01" min="-2.0" max="2.0" class="input w-48" style="font-size: 3.0rem;">
                                     </div>
-                                    <span class="text-sm text-gray-600 italic">(0.75 = 4:3, 0.5625 = 16:9, 1.0 = 1:1)</span>
+                                </div>
+                                <div class="flex items-center gap-2.5">
+                                    <label class="min-w-[150px] font-medium">Preset Ratios:</label>
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <button class="aspect-ratio-preset" data-ratio="1.0" title="Square (1:1)">
+                                            <svg class="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6"><use href="#square-ratio"></use></svg>
+                                            <span class="text-xs mt-1">Square</span>
+                                        </button>
+                                        <button class="aspect-ratio-preset" data-ratio="0.8" title="Portrait (4:5)">
+                                            <svg class="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6"><use href="#portrait-ratio"></use></svg>
+                                            <span class="text-xs mt-1">Portrait</span>
+                                        </button>
+                                        <button class="aspect-ratio-preset" data-ratio="0.5625" title="Vertical (9:16)">
+                                            <svg class="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6"><use href="#vertical-ratio"></use></svg>
+                                            <span class="text-xs mt-1">Vertical</span>
+                                        </button>
+                                        <button class="aspect-ratio-preset" data-ratio="1.91" title="Landscape (21:11)">
+                                            <svg class="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6"><use href="#landscape-ratio"></use></svg>
+                                            <span class="text-xs mt-1">Landscape</span>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="flex items-center gap-2.5">
                                     <label class="min-w-[150px] font-medium">Calculate Ratio:</label>
@@ -511,6 +544,7 @@
                                         <button id="calculateRatio" class="btn btn-secondary text-sm px-4 ml-2">Calculate</button>
                                     </div>
                                 </div>
+                                
                                 <div class="flex items-center gap-2.5">
                                     <label for="maxWorkers" class="min-w-[150px] font-medium">Max Workers:</label>
                                     <input type="number" id="maxWorkers" value="6" min="1" max="32" class="input w-24">
@@ -1805,6 +1839,194 @@
                 input.value = ratio;
                 input.dispatchEvent(new Event('input', {bubbles:true}));
             }
+        });
+
+        // Form persistence functions
+        function saveFormValues() {
+            const formData = {
+                // Basic settings
+                targetRatio: document.getElementById('targetRatio').value,
+                maxWorkers: document.getElementById('maxWorkers').value,
+                
+                // Detection settings
+                skipFrames: document.getElementById('skipFrames').value,
+                confThreshold: document.getElementById('confThreshold').value,
+                modelSize: document.getElementById('modelSize').value,
+                objectClasses: document.getElementById('objectClasses').value,
+                trackCount: document.getElementById('trackCount').value,
+                
+                // Crop settings
+                paddingRatio: document.getElementById('paddingRatio').value,
+                sizeWeight: document.getElementById('sizeWeight').value,
+                centerWeight: document.getElementById('centerWeight').value,
+                motionWeight: document.getElementById('motionWeight').value,
+                historyWeight: document.getElementById('historyWeight').value,
+                saliencyWeight: document.getElementById('saliencyWeight').value,
+                
+                // Feature toggles
+                faceDetection: document.getElementById('faceDetection').checked,
+                weightedCenter: document.getElementById('weightedCenter').checked,
+                blendSaliency: document.getElementById('blendSaliency').checked,
+                
+                // Smoothing settings
+                applySmoothing: document.getElementById('applySmoothing').checked,
+                smoothingWindow: document.getElementById('smoothingWindow').value,
+                positionInertia: document.getElementById('positionInertia').value,
+                sizeInertia: document.getElementById('sizeInertia').value,
+                
+                // Debug settings
+                debug: document.getElementById('debug').checked,
+                showHelp: document.getElementById('showHelp').checked,
+                
+                // Batch settings
+                recursiveSearch: document.getElementById('recursiveSearch').checked
+            };
+            
+            localStorage.setItem('reframerFormData', JSON.stringify(formData));
+        }
+
+        function loadFormValues() {
+            const savedData = localStorage.getItem('reframerFormData');
+            if (!savedData) return;
+            
+            try {
+                const formData = JSON.parse(savedData);
+                
+                // Load basic settings
+                if (formData.targetRatio) {
+                    document.getElementById('targetRatio').value = formData.targetRatio;
+                    document.getElementById('aspectRatioDial').value = formData.targetRatio;
+                }
+                if (formData.maxWorkers) document.getElementById('maxWorkers').value = formData.maxWorkers;
+                
+                // Load detection settings
+                if (formData.skipFrames) document.getElementById('skipFrames').value = formData.skipFrames;
+                if (formData.confThreshold) document.getElementById('confThreshold').value = formData.confThreshold;
+                if (formData.modelSize) document.getElementById('modelSize').value = formData.modelSize;
+                if (formData.objectClasses) document.getElementById('objectClasses').value = formData.objectClasses;
+                if (formData.trackCount) document.getElementById('trackCount').value = formData.trackCount;
+                
+                // Load crop settings
+                if (formData.paddingRatio) document.getElementById('paddingRatio').value = formData.paddingRatio;
+                if (formData.sizeWeight) document.getElementById('sizeWeight').value = formData.sizeWeight;
+                if (formData.centerWeight) document.getElementById('centerWeight').value = formData.centerWeight;
+                if (formData.motionWeight) document.getElementById('motionWeight').value = formData.motionWeight;
+                if (formData.historyWeight) document.getElementById('historyWeight').value = formData.historyWeight;
+                if (formData.saliencyWeight) document.getElementById('saliencyWeight').value = formData.saliencyWeight;
+                
+                // Load feature toggles
+                if (formData.faceDetection !== undefined) {
+                    document.getElementById('faceDetection').checked = formData.faceDetection;
+                    updateToggleButtonState('faceDetection');
+                }
+                if (formData.weightedCenter !== undefined) {
+                    document.getElementById('weightedCenter').checked = formData.weightedCenter;
+                    updateToggleButtonState('weightedCenter');
+                }
+                if (formData.blendSaliency !== undefined) {
+                    document.getElementById('blendSaliency').checked = formData.blendSaliency;
+                    updateToggleButtonState('blendSaliency');
+                }
+                
+                // Load smoothing settings
+                if (formData.applySmoothing !== undefined) {
+                    document.getElementById('applySmoothing').checked = formData.applySmoothing;
+                    updateToggleButtonState('applySmoothing');
+                }
+                if (formData.smoothingWindow) document.getElementById('smoothingWindow').value = formData.smoothingWindow;
+                if (formData.positionInertia) document.getElementById('positionInertia').value = formData.positionInertia;
+                if (formData.sizeInertia) document.getElementById('sizeInertia').value = formData.sizeInertia;
+                
+                // Load debug settings
+                if (formData.debug !== undefined) {
+                    document.getElementById('debug').checked = formData.debug;
+                    updateToggleButtonState('debug');
+                }
+                if (formData.showHelp !== undefined) {
+                    document.getElementById('showHelp').checked = formData.showHelp;
+                    updateToggleButtonState('showHelp');
+                }
+                
+                // Load batch settings
+                if (formData.recursiveSearch !== undefined) {
+                    document.getElementById('recursiveSearch').checked = formData.recursiveSearch;
+                    updateToggleButtonState('recursiveSearch');
+                }
+                
+            } catch (error) {
+                console.error('Error loading saved form data:', error);
+            }
+        }
+
+        function updateToggleButtonState(checkboxId) {
+            const checkbox = document.getElementById(checkboxId);
+            const toggleButton = checkbox.closest('.toggle-button');
+            if (toggleButton) {
+                if (checkbox.checked) {
+                    toggleButton.classList.add('active');
+                } else {
+                    toggleButton.classList.remove('active');
+                }
+            }
+        }
+
+        // Toggle button functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load saved values first
+            loadFormValues();
+            
+            const toggleButtons = document.querySelectorAll('.toggle-button');
+            
+            toggleButtons.forEach(toggleButton => {
+                const checkbox = toggleButton.querySelector('input[type="checkbox"]');
+                
+                // Set initial state
+                if (checkbox.checked) {
+                    toggleButton.classList.add('active');
+                }
+                
+                // Handle checkbox change
+                checkbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        toggleButton.classList.add('active');
+                    } else {
+                        toggleButton.classList.remove('active');
+                    }
+                    saveFormValues(); // Save on change
+                });
+                
+                // Handle button click
+                toggleButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    checkbox.checked = !checkbox.checked;
+                    checkbox.dispatchEvent(new Event('change'));
+                });
+            });
+            
+            // Add change listeners to all form inputs
+            const formInputs = document.querySelectorAll('input[type="number"], input[type="text"], select');
+            formInputs.forEach(input => {
+                input.addEventListener('change', saveFormValues);
+                input.addEventListener('input', saveFormValues);
+            });
+            
+            // Add event listeners for aspect ratio preset buttons
+            const presetButtons = document.querySelectorAll('.aspect-ratio-preset');
+            presetButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const ratio = parseFloat(this.dataset.ratio);
+                    const knob = document.getElementById('aspectRatioDial');
+                    const input = document.getElementById('targetRatio');
+                    
+                    // Update both knob and input
+                    knob.value = ratio;
+                    input.value = ratio;
+                    input.dispatchEvent(new Event('input', {bubbles:true}));
+                    
+                    // Save the new value
+                    saveFormValues();
+                });
+            });
         });
     </script>
 </body>
