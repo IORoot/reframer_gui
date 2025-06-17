@@ -88,6 +88,11 @@ def main(args=None):
     if args is None:
         args = parse_args()
     
+    # Debug output to verify parameters
+    print(f"DEBUG: Debug mode enabled: {args.debug}")
+    print(f"DEBUG: Current working directory: {os.getcwd()}")
+    print(f"DEBUG: All arguments: {vars(args)}")
+    
     # Initialize components with YOLOv8
     video_processor = VideoProcessor()
 
@@ -97,6 +102,7 @@ def main(args=None):
         model_size=args.model_size,                # 📏 Size of the YOLOv8 model (n=small, s=medium, m=large, l=xlarge).
         classes=args.object_classes,               # 🏷️ Classes to detect (0=person, 1=bicycle, 4=car, 7=truck, etc...).
         debug=args.debug,                               # 🐛 If True, saves debug images and logs to help you visualize decisions.
+        input_video_path=args.input,               # 📁 Path to input video (for debug log location)
     )
 
     tracker = ObjectTracker(
@@ -117,6 +123,7 @@ def main(args=None):
         face_detection=args.face_detection,     # 👤 If True, uses face to enhance detection in the crop. Uses weighted averages.
         weighted_center=args.weighted_center,   # ⚖️ If True, uses weighted average of detected objects' centers for crop center.
         blend_saliency=args.blend_saliency,     # 🌈 If True, blends saliency map with detected objects to enhance crop.
+        input_video_path=args.input,            # 📁 Path to input video (for debug log location)
     )
 
 
@@ -324,6 +331,10 @@ def main(args=None):
         crop_windows=smoothed_windows,
         fps=fps
     )
+    
+    # Finalize debug video if debug mode is enabled
+    if args.debug:
+        detector.finalize_debug_video()
     
     elapsed_time = time.time() - start_time
     print(f"Video processing completed in {elapsed_time:.2f} seconds")

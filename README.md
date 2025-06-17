@@ -40,7 +40,7 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 3. Install dependencies:
 ```bash
-pip install -r requirement.txt
+pip install -r requirements.txt
 #or individually:
 pip install ultralytics opencv-python numpy tqdm
 ```

@@ -414,7 +414,7 @@
                                 <span class="text-sm text-gray-600 italic">(Optional)</span>
                             </div>
                             <div class="flex gap-2.5">
-                                <button id="processButton" disabled class="btn btn-primary flex-grow disabled:bg-gray-300 disabled:cursor-not-allowed">Process Video</button>
+                                <button id="processButton" disabled class="btn btn-run flex-grow disabled:bg-gray-300 disabled:cursor-not-allowed">Process Video</button>
                                 <button id="cancelButton" class="btn btn-secondary hidden">Cancel</button>
                             </div>
                         </div>
@@ -690,11 +690,18 @@
                         <div id="debug-tab" class="tab-pane hidden">
                             <div class="space-y-1.5">
                                 <div class="flex items-center gap-2.5">
-                                    <label class="toggle-button" for="debug">
-                                        <input type="checkbox" id="debug" class="m-0">
+                                    <label class="toggle-button" for="debugMode">
+                                        <input type="checkbox" id="debugMode" class="m-0">
                                         <svg><use href="#debug-icon"></use></svg>
                                     </label>
-                                    <label for="debug" class="ml-1.5 cursor-pointer">Debug Mode</label>
+                                    <label for="debugMode" class="ml-1.5 cursor-pointer">Debug Mode (Create Debug Video)</label>
+                                </div>
+                                <div class="flex items-center gap-2.5">
+                                    <label class="toggle-button" for="debugWindow">
+                                        <input type="checkbox" id="debugWindow" class="m-0">
+                                        <svg><use href="#debug-icon"></use></svg>
+                                    </label>
+                                    <label for="debugWindow" class="ml-1.5 cursor-pointer">Show Debug Window</label>
                                 </div>
                                 <div class="flex items-center gap-2.5">
                                     <label class="toggle-button" for="showHelp">
@@ -908,7 +915,10 @@
             smoothingWindow: document.getElementById('smoothingWindow'),
             positionInertia: document.getElementById('positionInertia'),
             sizeInertia: document.getElementById('sizeInertia'),
-            debug: document.getElementById('debug')
+            debugMode: document.getElementById('debugMode'),
+            debugWindow: document.getElementById('debugWindow'),
+            showHelp: document.getElementById('showHelp'),
+            recursiveSearch: document.getElementById('recursiveSearch')
         };
 
         const debugPanel = document.querySelector('.debug-panel');
@@ -923,7 +933,13 @@
         });
 
         // Update debug panel visibility when debug mode is toggled
-        settings.debug.addEventListener('change', (e) => {
+        settings.debugMode.addEventListener('change', (e) => {
+            // This now only controls debug mode for the Python script (debug video creation)
+            // The debug window visibility is controlled by debugWindow button
+        });
+
+        // Update debug panel visibility when debug window is toggled
+        settings.debugWindow.addEventListener('change', (e) => {
             const debugPanel = document.querySelector('.debug-panel');
             const debugOutput = document.getElementById('debugOutput');
             const toggleDebugButton = document.getElementById('toggleDebug');
@@ -1064,7 +1080,10 @@
             smoothingWindow: "Number of frames to use for smoothing (1-100). Higher values make movement smoother but may lag behind rapid changes.",
             positionInertia: "How much the crop position sticks to previous frames (0.0-1.0). Higher values reduce jitter but may lag behind movement.",
             sizeInertia: "How much the crop size sticks to previous frames (0.0-1.0). Higher values make size changes smoother but may lag behind.",
-            debug: "Enable detailed debug output showing processing steps and decisions."
+            debugMode: "Enable debug mode in the Python script to create a debug video with detection boxes. This will generate a video file showing object detection results.",
+            debugWindow: "Show the debug window in the GUI to display real-time processing output and logs.",
+            showHelp: "Show help messages in the GUI to guide the user through the process.",
+            recursiveSearch: "Search subfolders for video files. This can be useful for organizing large video collections."
         };
 
         // Add help text to settings
@@ -1160,7 +1179,10 @@
                 ['Smoothing Window', options.smoothing_window],
                 ['Position Inertia', options.position_inertia],
                 ['Size Inertia', options.size_inertia],
-                ['Debug Mode', options.debug ? 'Enabled' : 'Disabled']
+                ['Debug Mode', options.debug ? 'Enabled' : 'Disabled'],
+                ['Debug Window', options.debug_window ? 'Enabled' : 'Disabled'],
+                ['Show Help', options.show_help ? 'Enabled' : 'Disabled'],
+                ['Recursive Search', options.recursive_search ? 'Enabled' : 'Disabled']
             ];
 
             // Find the longest label for alignment
@@ -1218,7 +1240,7 @@
                 const objectClassesArray = settings.objectClasses.value.split(',').map(x => parseInt(x.trim()));
 
                 // Show debug panel if debug mode is enabled
-                if (settings.debug.checked) {
+                if (settings.debugMode.checked) {
                     const debugPanel = document.querySelector('.debug-panel');
                     debugPanel.classList.remove('hidden');
                     isDebugExpanded = true;
@@ -1252,7 +1274,10 @@
                     smoothing_window: parseInt(settings.smoothingWindow.value),
                     position_inertia: parseFloat(settings.positionInertia.value),
                     size_inertia: parseFloat(settings.sizeInertia.value),
-                    debug: settings.debug.checked
+                    debug: settings.debugMode.checked,
+                    debug_window: settings.debugWindow.checked,
+                    show_help: settings.showHelp.checked,
+                    recursive_search: settings.recursiveSearch.checked
                 };
 
                 // Log settings to debug window
@@ -1488,7 +1513,7 @@
             const debugOutput = document.getElementById('debugOutput');
             
             // Show debug panel if it's hidden but debug mode is enabled
-            if (settings.debug.checked && debugPanel.classList.contains('hidden')) {
+            if (settings.debugMode.checked && debugPanel.classList.contains('hidden')) {
                 debugPanel.classList.remove('hidden');
             }
             
@@ -1655,7 +1680,10 @@
                     smoothing_window: parseInt(settings.smoothingWindow.value),
                     position_inertia: parseFloat(settings.positionInertia.value),
                     size_inertia: parseFloat(settings.sizeInertia.value),
-                    debug: settings.debug.checked
+                    debug: settings.debugMode.checked,
+                    debug_window: settings.debugWindow.checked,
+                    show_help: settings.showHelp.checked,
+                    recursive_search: settings.recursiveSearch.checked
                 };
 
                 // Log settings to debug window
@@ -1701,7 +1729,7 @@
             if (batchQueue.length === 0) return;
             
             // Show debug panel if debug mode is enabled
-            if (settings.debug.checked) {
+            if (settings.debugMode.checked) {
                 const debugPanel = document.querySelector('.debug-panel');
                 debugPanel.classList.remove('hidden');
                 isDebugExpanded = true;
@@ -1778,35 +1806,35 @@
         // Initialize with single video input tab
         switchInputTypeTab('single');
 
-        // Toggle button functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const toggleButtons = document.querySelectorAll('.toggle-button');
+        // // Toggle button functionality
+        // document.addEventListener('DOMContentLoaded', function() {
+        //     const toggleButtons = document.querySelectorAll('.toggle-button');
             
-            toggleButtons.forEach(toggleButton => {
-                const checkbox = toggleButton.querySelector('input[type="checkbox"]');
+        //     toggleButtons.forEach(toggleButton => {
+        //         const checkbox = toggleButton.querySelector('input[type="checkbox"]');
                 
-                // Set initial state
-                if (checkbox.checked) {
-                    toggleButton.classList.add('active');
-                }
+        //         // Set initial state
+        //         if (checkbox.checked) {
+        //             toggleButton.classList.add('active');
+        //         }
                 
-                // Handle checkbox change
-                checkbox.addEventListener('change', function() {
-                    if (this.checked) {
-                        toggleButton.classList.add('active');
-                    } else {
-                        toggleButton.classList.remove('active');
-                    }
-                });
+        //         // Handle checkbox change
+        //         checkbox.addEventListener('change', function() {
+        //             if (this.checked) {
+        //                 toggleButton.classList.add('active');
+        //             } else {
+        //                 toggleButton.classList.remove('active');
+        //             }
+        //         });
                 
-                // Handle button click
-                toggleButton.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    checkbox.checked = !checkbox.checked;
-                    checkbox.dispatchEvent(new Event('change'));
-                });
-            });
-        });
+        //         // Handle button click
+        //         toggleButton.addEventListener('click', function(e) {
+        //             e.preventDefault();
+        //             checkbox.checked = !checkbox.checked;
+        //             checkbox.dispatchEvent(new Event('change'));
+        //         });
+        //     });
+        // });
 
         // Sync <x-knob> and input
         (function() {
@@ -1875,7 +1903,8 @@
                 sizeInertia: document.getElementById('sizeInertia').value,
                 
                 // Debug settings
-                debug: document.getElementById('debug').checked,
+                debug: document.getElementById('debugMode').checked,
+                debugWindow: document.getElementById('debugWindow').checked,
                 showHelp: document.getElementById('showHelp').checked,
                 
                 // Batch settings
@@ -1939,8 +1968,12 @@
                 
                 // Load debug settings
                 if (formData.debug !== undefined) {
-                    document.getElementById('debug').checked = formData.debug;
-                    updateToggleButtonState('debug');
+                    document.getElementById('debugMode').checked = formData.debug;
+                    updateToggleButtonState('debugMode');
+                }
+                if (formData.debugWindow !== undefined) {
+                    document.getElementById('debugWindow').checked = formData.debugWindow;
+                    updateToggleButtonState('debugWindow');
                 }
                 if (formData.showHelp !== undefined) {
                     document.getElementById('showHelp').checked = formData.showHelp;

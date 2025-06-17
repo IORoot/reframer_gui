@@ -14,20 +14,96 @@ class ObjectDetector:
 
 
 
-    def __init__(self, confidence_threshold=0.5, model_size='n', classes=[0], debug=False):
+    def __init__(self, confidence_threshold=0.5, model_size='n', classes=[0], debug=False, input_video_path=None):
         """
         Initialize YOLOv8 detector.
         
         Args:
             confidence_threshold: Minimum confidence score for detections
             model_size: YOLOv8 model size ('n', 's', 'm', 'l', 'x')
+            classes: List of class IDs to detect (default: [0] for person)
+            debug: Enable debug mode to create video with detection boxes
+            input_video_path: Path to input video (used to determine debug log location)
         """
         self.confidence_threshold = confidence_threshold
-        self.model = None
         self.model_size = model_size
-        self._initialize_model()
         self.classes = classes
         self.debug = debug
+        self.input_video_path = input_video_path
+        self.model = None
+        self.debug_video_writer = None
+        self.debug_video_path = None
+        self.frame_count = 0
+        
+        # Initialize debug video if debug mode is enabled
+        if self.debug:
+            self._initialize_debug_video()
+        
+        # Initialize the model
+        self._initialize_model()
+    
+    def _initialize_debug_video(self):
+        """Initialize debug video writer."""
+        # Determine debug folder location
+        if self.input_video_path:
+            # Use the directory of the input video
+            input_dir = os.path.dirname(os.path.abspath(self.input_video_path))
+            debug_folder = os.path.join(input_dir, "debug_logs")
+        else:
+            # Fallback to current directory
+            debug_folder = "debug_logs"
+        
+        os.makedirs(debug_folder, exist_ok=True)
+        
+        timestamp = int(time.time())
+        self.debug_video_path = os.path.join(debug_folder, f"detection_debug_{timestamp}.mp4")
+        
+        # We'll initialize the video writer when we get the first frame
+        print(f"Debug video will be saved to: {self.debug_video_path}")
+    
+    def _initialize_video_writer(self, frame):
+        """Initialize video writer with frame dimensions."""
+        if self.debug_video_writer is None and self.debug:
+            height, width = frame.shape[:2]
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            self.debug_video_writer = cv2.VideoWriter(
+                self.debug_video_path, 
+                fourcc, 
+                30.0,  # FPS
+                (width, height)
+            )
+            print(f"Debug video writer initialized: {width}x{height} @ 30fps")
+    
+    def _draw_detection_boxes(self, frame, detections):
+        """Draw detection boxes on the frame."""
+        frame_with_boxes = frame.copy()
+        
+        for detection in detections:
+            x, y, w, h = detection['box']
+            confidence = detection['confidence']
+            class_name = detection['class_name']
+            
+            # Draw bounding box
+            cv2.rectangle(frame_with_boxes, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            
+            # Draw label background
+            label = f"{class_name}: {confidence:.2f}"
+            (label_width, label_height), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)
+            cv2.rectangle(frame_with_boxes, (x, y - label_height - 10), (x + label_width, y), (0, 255, 0), -1)
+            
+            # Draw label text
+            cv2.putText(frame_with_boxes, label, (x, y - 5), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 2)
+        
+        return frame_with_boxes
+    
+    def finalize_debug_video(self):
+        """Finalize and close the debug video writer."""
+        if self.debug_video_writer is not None:
+            self.debug_video_writer.release()
+            self.debug_video_writer = None
+            print(f"Debug video saved: {self.debug_video_path}")
+            print(f"Total frames processed: {self.frame_count}")
     
 
 
@@ -137,16 +213,33 @@ class ObjectDetector:
             detections = detections[:top_n]
 
         # DEBUG DETECTIONS!
-        if self.debug and detections:
-            timestamp = int(time.time() * 1000)
-            debug_folder = f"debug_logs"
-            os.makedirs(debug_folder, exist_ok=True)
-            # Save the detection result into the debug folder
-            results.save(os.path.join(debug_folder, f"detect_results_{timestamp}.jpg"))
-            for detection in detections:
-                with open("debug_logs/log1_detections.txt", "a") as f:
-                    f.write(f"Detector Box : {detection['box']} class_name: {detection['class_name']}, "
-                            f"Confidence: {detection['confidence']}\n")
+        if self.debug:
+            # Initialize video writer on first frame
+            self._initialize_video_writer(frame)
+            
+            # Draw detection boxes on frame
+            frame_with_boxes = self._draw_detection_boxes(frame, detections)
+            
+            # Write frame to video
+            if self.debug_video_writer is not None:
+                self.debug_video_writer.write(frame_with_boxes)
+                self.frame_count += 1
+            
+            # Log detection details to text file
+            if detections:
+                # Use the same directory as the input video for debug logs
+                if self.input_video_path:
+                    input_dir = os.path.dirname(os.path.abspath(self.input_video_path))
+                    debug_folder = os.path.join(input_dir, "debug_logs")
+                else:
+                    debug_folder = "debug_logs"
+                
+                os.makedirs(debug_folder, exist_ok=True)
+                for detection in detections:
+                    with open(os.path.join(debug_folder, "log1_detections.txt"), "a") as f:
+                        f.write(f"Frame {self.frame_count}: Detector Box: {detection['box']} "
+                                f"class_name: {detection['class_name']}, "
+                                f"Confidence: {detection['confidence']}\n")
 
         return detections
     
