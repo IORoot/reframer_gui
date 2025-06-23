@@ -1,7 +1,7 @@
 ---
 description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 ---
 description: Reframer Project Overview
@@ -144,12 +144,33 @@ reframer_gui/
 - Python backend is bundled as extra resources
 - FFmpeg dependencies must be available
 
-## Testing Considerations
-- Test with various video formats and sizes
-- Verify object detection accuracy
-- Test batch processing functionality
-- Validate aspect ratio conversions
-- Check memory usage with large videos
+## Testing Framework
+
+The project includes a comprehensive testing framework for the Python backend to ensure robustness and maintainability.
+- Always open the report once completed the tests. 'npx playwright show-report'
+
+### Test Categories
+- **Unit Tests** (`@pytest.mark.unit`): Test individual functions in isolation, using mocks to avoid external dependencies.
+- **Integration Tests** (`@pytest.mark.integration`): Test component interactions, which may require real video files.
+- **Slow Tests** (`@pytest.mark.slow`): Tests that are time-consuming and can be skipped for quicker feedback.
+- **Video-Dependent Tests** (`@pytest.mark.requires_video`): Tests that require sample video files, skipped if videos are not available.
+
+### Test Runners
+1.  **Simple Test**: `python3 tests/test_basic_execution.py` - A standalone script for initial verification of the environment and basic script execution.
+2.  **Shell Script**: `./test_backend.sh` - A simple wrapper for the basic execution test.
+3.  **Advanced Runner**: `python tests/run_tests.py` - A full-featured test runner with options for coverage, test types, and output formats.
+4.  **Direct Pytest**: `pytest tests/` - For standard test execution with all of pytest's features.
+
+### Quick Start
+- **Basic Verification**: 
+  ```bash
+  python3 tests/test_basic_execution.py
+  ```
+- **Full Test Suite**:
+  ```bash
+  pip install -r tests/requirements-test.txt
+  python tests/run_tests.py
+  ```
 
 ## Performance Optimization
 - Use appropriate skip_frames for video type
