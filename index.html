@@ -128,6 +128,31 @@
         .object-classes-container {
             position: relative;
         }
+        
+        /* Model size button styles */
+        .model-size-btn {
+            background-color: #f9fafb;
+            border-color: #d1d5db;
+            color: #6b7280;
+            transition: all 0.15s ease-in-out;
+        }
+        
+        .model-size-btn:hover {
+            background-color: #f3f4f6;
+            border-color: #9ca3af;
+            color: #374151;
+        }
+        
+        .model-size-btn.selected {
+            background-color: #3b82f6;
+            border-color: #2563eb;
+            color: white;
+        }
+        
+        .model-size-btn.selected:hover {
+            background-color: #2563eb;
+            border-color: #1d4ed8;
+        }
     </style>
 </head>
 <body class="font-sans bg-gray-100 m-0 p-0 h-screen flex">
@@ -369,6 +394,38 @@
                         <stop offset="1" stop-color="#222222" />
                     </radialGradient>
                 </defs>
+            </symbol>
+
+            <!-- Model Size Icons -->
+            <symbol id="model-nano" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M12 1v6m0 6v6"/>
+                <path d="M1 12h6m6 0h6"/>
+            </symbol>
+            
+            <symbol id="model-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="5"/>
+                <path d="M12 2v8m0 4v8"/>
+                <path d="M2 12h8m4 0h8"/>
+            </symbol>
+            
+            <symbol id="model-medium" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="7"/>
+                <path d="M12 1v10m0 2v10"/>
+                <path d="M1 12h10m2 0h10"/>
+            </symbol>
+            
+            <symbol id="model-large" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="9"/>
+                <path d="M12 0v12m0 0v12"/>
+                <path d="M0 12h12m0 0h12"/>
+            </symbol>
+            
+            <symbol id="model-xlarge" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="11"/>
+                <path d="M12 0v12m0 0v12"/>
+                <path d="M0 12h12m0 0h12"/>
+                <circle cx="12" cy="12" r="3" fill="currentColor"/>
             </symbol>
 
             <!-- Toggle button icons -->
@@ -696,13 +753,30 @@
                                 </div>
                                 <div class="flex items-center gap-2.5">
                                     <label for="modelSize" class="min-w-[150px] font-medium">Model Size:</label>
-                                    <select id="modelSize" class="input w-24 bg-white">
-                                        <option value="n">Nano (Fastest)</option>
-                                        <option value="s">Small</option>
-                                        <option value="m">Medium</option>
-                                        <option value="l">Large</option>
-                                        <option value="x" selected>XLarge (Most Accurate)</option>
-                                    </select>
+                                    <div class="flex gap-2">
+                                        <button type="button" class="model-size-btn px-3 py-2 border rounded cursor-pointer transition-colors flex items-center gap-2" data-value="n">
+                                            <svg class="w-5 h-5"><use href="#model-nano"></use></svg>
+                                            <span class="text-sm">Nano</span>
+                                            <span class="text-xs text-gray-500">(Fastest)</span>
+                                        </button>
+                                        <button type="button" class="model-size-btn px-3 py-2 border rounded cursor-pointer transition-colors flex items-center gap-2" data-value="s">
+                                            <svg class="w-5 h-5"><use href="#model-small"></use></svg>
+                                            <span class="text-sm">Small</span>
+                                        </button>
+                                        <button type="button" class="model-size-btn px-3 py-2 border rounded cursor-pointer transition-colors flex items-center gap-2" data-value="m">
+                                            <svg class="w-5 h-5"><use href="#model-medium"></use></svg>
+                                            <span class="text-sm">Medium</span>
+                                        </button>
+                                        <button type="button" class="model-size-btn px-3 py-2 border rounded cursor-pointer transition-colors flex items-center gap-2" data-value="l">
+                                            <svg class="w-5 h-5"><use href="#model-large"></use></svg>
+                                            <span class="text-sm">Large</span>
+                                        </button>
+                                        <button type="button" class="model-size-btn px-3 py-2 border rounded cursor-pointer transition-colors flex items-center gap-2" data-value="x">
+                                            <svg class="w-5 h-5"><use href="#model-xlarge"></use></svg>
+                                            <span class="text-sm">XLarge</span>
+                                            <span class="text-xs text-gray-500">(Most Accurate)</span>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="flex items-center gap-2.5">
                                     <label for="objectClasses" class="min-w-[150px] font-medium">Object Classes:</label>
@@ -1029,7 +1103,6 @@
             detector: document.getElementById('detector'),
             skipFrames: document.getElementById('skipFrames'),
             confThreshold: document.getElementById('confThreshold'),
-            modelSize: document.getElementById('modelSize'),
             trackCount: document.getElementById('trackCount'),
             paddingRatio: document.getElementById('paddingRatio'),
             sizeWeight: document.getElementById('sizeWeight'),
@@ -1047,7 +1120,14 @@
             debugMode: document.getElementById('debugMode'),
             debugWindow: document.getElementById('debugWindow'),
             showHelp: document.getElementById('showHelp'),
-            recursiveSearch: document.getElementById('recursiveSearch')
+            recursiveSearch: document.getElementById('recursiveSearch'),
+            // Model size getter for button-based selection
+            get modelSize() {
+                const selectedButton = document.querySelector('.model-size-btn.selected');
+                const value = selectedButton ? selectedButton.dataset.value : 'x'; // Default to XLarge
+                console.log('Getting model size:', value, 'from button:', selectedButton);
+                return value;
+            }
         };
 
         const debugPanel = document.querySelector('.debug-panel');
@@ -1398,7 +1478,7 @@
                     detector: settings.detector.value,
                     skip_frames: parseInt(settings.skipFrames.value),
                     conf_threshold: parseFloat(settings.confThreshold.value),
-                    model_size: settings.modelSize.value,
+                    model_size: settings.modelSize,
                     object_classes: objectClassesArray,
                     track_count: parseInt(settings.trackCount.value),
                     padding_ratio: parseFloat(settings.paddingRatio.value),
@@ -1804,7 +1884,7 @@
                     detector: settings.detector.value,
                     skip_frames: parseInt(settings.skipFrames.value),
                     conf_threshold: parseFloat(settings.confThreshold.value),
-                    model_size: settings.modelSize.value,
+                    model_size: settings.modelSize,
                     object_classes: objectClassesArray,
                     track_count: parseInt(settings.trackCount.value),
                     padding_ratio: parseFloat(settings.paddingRatio.value),
@@ -2019,7 +2099,7 @@
                 // Detection settings
                 skipFrames: document.getElementById('skipFrames').value,
                 confThreshold: document.getElementById('confThreshold').value,
-                modelSize: document.getElementById('modelSize').value,
+                modelSize: settings.modelSize,
                 objectClasses: getSelectedObjectClasses(),
                 trackCount: document.getElementById('trackCount').value,
                 
@@ -2071,7 +2151,7 @@
                 // Load detection settings
                 if (formData.skipFrames) document.getElementById('skipFrames').value = formData.skipFrames;
                 if (formData.confThreshold) document.getElementById('confThreshold').value = formData.confThreshold;
-                if (formData.modelSize) document.getElementById('modelSize').value = formData.modelSize;
+                if (formData.modelSize) setModelSize(formData.modelSize);
                 if (formData.objectClasses) setSelectedObjectClasses(formData.objectClasses);
                 if (formData.trackCount) document.getElementById('trackCount').value = formData.trackCount;
                 
@@ -2156,6 +2236,8 @@
                 // Set initial state
                 if (checkbox.checked) {
                     toggleButton.classList.add('active');
+                } else {
+                    toggleButton.classList.remove('active');
                 }
                 
                 // Handle checkbox change
@@ -2168,11 +2250,12 @@
                     saveFormValues(); // Save on change
                 });
                 
-                // Handle button click
+                // Handle button click (not on checkbox itself)
                 toggleButton.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    checkbox.checked = !checkbox.checked;
-                    checkbox.dispatchEvent(new Event('change'));
+                    if (e.target !== checkbox) {
+                        checkbox.checked = !checkbox.checked;
+                        checkbox.dispatchEvent(new Event('change'));
+                    }
                 });
             });
             
@@ -2406,6 +2489,147 @@
         
         // Initial call to set up responsive grid
         setTimeout(updateGridResponsiveness, 100);
+
+        // Model size button functionality
+        function initializeModelSizeButtons() {
+            const buttons = document.querySelectorAll('.model-size-btn');
+            console.log('Found model size buttons:', buttons.length);
+            
+            // Set initial selection (XLarge by default)
+            const defaultButton = document.querySelector('.model-size-btn[data-value="x"]');
+            if (defaultButton) {
+                defaultButton.classList.add('selected');
+                console.log('Set default model size to XLarge');
+            } else {
+                console.log('Could not find XLarge button');
+            }
+            
+            // Add click handlers
+            buttons.forEach(button => {
+                button.addEventListener('click', () => {
+                    console.log('Model size button clicked:', button.dataset.value);
+                    // Remove selection from all buttons
+                    buttons.forEach(btn => btn.classList.remove('selected'));
+                    // Add selection to clicked button
+                    button.classList.add('selected');
+                    console.log('Selected model size:', button.dataset.value);
+                    // Save form values
+                    saveFormValues();
+                });
+            });
+        }
+
+        // Consolidated initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load saved values first
+            loadFormValues();
+            
+            // Initialize model size buttons
+            initializeModelSizeButtons();
+            
+            // Initialize toggle buttons
+            const toggleButtons = document.querySelectorAll('.toggle-button');
+            
+            toggleButtons.forEach(toggleButton => {
+                const checkbox = toggleButton.querySelector('input[type="checkbox"]');
+                
+                // Set initial state
+                if (checkbox.checked) {
+                    toggleButton.classList.add('active');
+                } else {
+                    toggleButton.classList.remove('active');
+                }
+                
+                // Handle checkbox change
+                checkbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        toggleButton.classList.add('active');
+                    } else {
+                        toggleButton.classList.remove('active');
+                    }
+                    saveFormValues(); // Save on change
+                });
+                
+                // Handle button click (not on checkbox itself)
+                toggleButton.addEventListener('click', function(e) {
+                    if (e.target !== checkbox) {
+                        checkbox.checked = !checkbox.checked;
+                        checkbox.dispatchEvent(new Event('change'));
+                    }
+                });
+            });
+            
+            // Add change listeners to all form inputs
+            const formInputs = document.querySelectorAll('input[type="number"], input[type="text"], select');
+            formInputs.forEach(input => {
+                input.addEventListener('change', saveFormValues);
+                input.addEventListener('input', saveFormValues);
+            });
+            
+            // Add event listeners for aspect ratio preset buttons
+            const presetButtons = document.querySelectorAll('.aspect-ratio-preset');
+            presetButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const ratio = parseFloat(this.dataset.ratio);
+                    const knob = document.getElementById('aspectRatioDial');
+                    const input = document.getElementById('targetRatio');
+                    
+                    // Update both knob and input
+                    knob.value = ratio;
+                    input.value = ratio;
+                    input.dispatchEvent(new Event('input', {bubbles:true}));
+                    
+                    // Save the new value
+                    saveFormValues();
+                });
+            });
+            
+            // Initialize object class buttons after DOM is loaded
+            generateObjectClassButtons();
+            
+            // Add event listeners for object class control buttons
+            const selectAllBtn = document.getElementById('selectAllClasses');
+            const deselectAllBtn = document.getElementById('deselectAllClasses');
+            const selectCommonBtn = document.getElementById('selectCommonClasses');
+            
+            if (selectAllBtn) {
+                selectAllBtn.addEventListener('click', () => {
+                    setSelectedObjectClasses(objectClasses.map(c => c.id));
+                    saveFormValues();
+                });
+            }
+            
+            if (deselectAllBtn) {
+                deselectAllBtn.addEventListener('click', () => {
+                    setSelectedObjectClasses([]);
+                    saveFormValues();
+                });
+            }
+            
+            if (selectCommonBtn) {
+                selectCommonBtn.addEventListener('click', () => {
+                    setSelectedObjectClasses(commonObjectClasses);
+                    saveFormValues();
+                });
+            }
+            
+            // Add resize listener for responsive grid
+            window.addEventListener('resize', updateGridResponsiveness);
+            
+            // Initial call to set up responsive grid
+            setTimeout(updateGridResponsiveness, 100);
+        });
+
+        // Function to set model size from saved value
+        function setModelSize(value) {
+            const buttons = document.querySelectorAll('.model-size-btn');
+            buttons.forEach(btn => btn.classList.remove('selected'));
+            
+            const targetButton = document.querySelector(`.model-size-btn[data-value="${value}"]`);
+            if (targetButton) {
+                targetButton.classList.add('selected');
+            }
+        }
     </script>
 </body>
 </html>
