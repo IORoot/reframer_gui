@@ -2,11 +2,133 @@
 <html>
 <head>
     <title>RF-1 Reframer - Video Reframing Tool</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
     <link href="./styles.css" rel="stylesheet">
     <script src="./xknob.js"></script>
+    <style>
+        /* Custom styles for object classes grid responsiveness */
+        #objectClassesGrid {
+            display: grid;
+            gap: 0.5rem;
+            max-height: 12rem;
+            overflow-y: auto;
+            border: 1px solid #d1d5db;
+            border-radius: 0.25rem;
+            padding: 0.75rem;
+            background-color: #f9fafb;
+        }
+        
+        /* Mobile first - 3 columns by default */
+        #objectClassesGrid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+        
+        /* Small screens and up - 4 columns */
+        @media (min-width: 640px) {
+            #objectClassesGrid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        
+        /* Medium screens and up - 5 columns */
+        @media (min-width: 768px) {
+            #objectClassesGrid {
+                grid-template-columns: repeat(5, 1fr);
+            }
+        }
+        
+        /* Large screens and up - 6 columns */
+        @media (min-width: 1024px) {
+            #objectClassesGrid {
+                grid-template-columns: repeat(6, 1fr);
+            }
+        }
+        
+        /* Button styling for object classes */
+        .object-class-btn {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            border: 1px solid;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            transition: all 0.15s ease-in-out;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-height: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Responsive button text sizing */
+        @media (max-width: 639px) {
+            .object-class-btn {
+                font-size: 0.625rem;
+                padding: 0.125rem 0.25rem;
+            }
+        }
+        
+        @media (min-width: 640px) and (max-width: 767px) {
+            .object-class-btn {
+                font-size: 0.6875rem;
+                padding: 0.1875rem 0.375rem;
+            }
+        }
+        
+        @media (min-width: 768px) {
+            .object-class-btn {
+                font-size: 0.75rem;
+                padding: 0.25rem 0.5rem;
+            }
+        }
+        
+        /* Debug styles to visualize responsive breakpoints */
+        #objectClassesGrid::before {
+            content: "Mobile (3 cols)";
+            position: absolute;
+            top: -20px;
+            left: 0;
+            font-size: 10px;
+            color: red;
+            background: white;
+            padding: 2px 4px;
+            border: 1px solid red;
+        }
+        
+        @media (min-width: 640px) {
+            #objectClassesGrid::before {
+                content: "Small (4 cols)";
+                color: orange;
+                border-color: orange;
+            }
+        }
+        
+        @media (min-width: 768px) {
+            #objectClassesGrid::before {
+                content: "Medium (5 cols)";
+                color: green;
+                border-color: green;
+            }
+        }
+        
+        @media (min-width: 1024px) {
+            #objectClassesGrid::before {
+                content: "Large (6 cols)";
+                color: blue;
+                border-color: blue;
+            }
+        }
+        
+        /* Alternative responsive approach using container queries or JavaScript fallback */
+        .object-classes-container {
+            position: relative;
+        }
+    </style>
 </head>
 <body class="font-sans bg-gray-100 m-0 p-0 h-screen flex">
 
@@ -584,8 +706,16 @@
                                 </div>
                                 <div class="flex items-center gap-2.5">
                                     <label for="objectClasses" class="min-w-[150px] font-medium">Object Classes:</label>
-                                    <input type="text" id="objectClasses" value="0" placeholder="0,1,2" class="input w-24">
-                                    <span class="text-sm text-gray-600 italic">(Comma-separated, 0=person)</span>
+                                    <div class="flex-1">
+                                        <div id="objectClassesGrid">
+                                            <!-- Object class toggle buttons will be generated here -->
+                                        </div>
+                                        <div class="flex gap-2 mt-2">
+                                            <button type="button" id="selectAllClasses" class="px-2 py-1 text-xs bg-blue-500 text-white border-none rounded cursor-pointer hover:bg-blue-600">Select All</button>
+                                            <button type="button" id="deselectAllClasses" class="px-2 py-1 text-xs bg-gray-500 text-white border-none rounded cursor-pointer hover:bg-gray-600">Deselect All</button>
+                                            <button type="button" id="selectCommonClasses" class="px-2 py-1 text-xs bg-green-500 text-white border-none rounded cursor-pointer hover:bg-green-600">Common Objects</button>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="flex items-center gap-2.5">
                                     <label for="trackCount" class="min-w-[150px] font-medium">Track Count:</label>
@@ -900,7 +1030,6 @@
             skipFrames: document.getElementById('skipFrames'),
             confThreshold: document.getElementById('confThreshold'),
             modelSize: document.getElementById('modelSize'),
-            objectClasses: document.getElementById('objectClasses'),
             trackCount: document.getElementById('trackCount'),
             paddingRatio: document.getElementById('paddingRatio'),
             sizeWeight: document.getElementById('sizeWeight'),
@@ -1065,7 +1194,7 @@
             skipFrames: "Process every Nth frame to speed up processing. Higher values are faster but may miss rapid movements. Recommended: 5-15 for most videos.",
             confThreshold: "Minimum confidence score (0.0-1.0) required for object detection. Higher values are more selective but may miss objects. Lower values detect more objects but may include false positives.",
             modelSize: "Size of the YOLO model to use. Larger models are more accurate but slower. Options: Nano (fastest), Small, Medium, Large, XLarge (most accurate).",
-            objectClasses: "Comma-separated list of object classes to detect. 0=person, 1=bicycle, etc. See YOLO documentation for full list. Default (0) detects people only.",
+            objectClasses: "Select which object classes to detect using the toggle buttons above. Click buttons to select/deselect objects. Use 'Select All', 'Deselect All', or 'Common Objects' for quick selection. Default is person only.",
             trackCount: "Maximum number of objects to track simultaneously. Higher values may improve tracking of multiple subjects but use more resources.",
             paddingRatio: "Additional space to add around detected objects (0.0-1.0). Higher values give more context but may include unwanted areas.",
             sizeWeight: "Importance of object size in crop decisions (0.0-1.0). Higher values prioritize keeping objects large in frame.",
@@ -1096,7 +1225,6 @@
                 skipFrames: document.getElementById('skipFrames'),
                 confThreshold: document.getElementById('confThreshold'),
                 modelSize: document.getElementById('modelSize'),
-                objectClasses: document.getElementById('objectClasses'),
                 trackCount: document.getElementById('trackCount'),
                 paddingRatio: document.getElementById('paddingRatio'),
                 sizeWeight: document.getElementById('sizeWeight'),
@@ -1130,6 +1258,18 @@
                 // Insert help text after the container
                 container.parentNode.insertBefore(helpText, container.nextSibling);
             });
+
+            // Special handling for object classes (new toggle button system)
+            const objectClassesContainer = document.querySelector('label[for="objectClasses"]').closest('.flex.items-center.gap-2\\.5');
+            if (objectClassesContainer) {
+                const helpText = document.createElement('div');
+                helpText.className = 'help-text text-sm text-gray-600 mt-1 ml-[150px] hidden';
+                helpText.textContent = settingsHelp.objectClasses;
+                helpText.id = 'objectClasses-help';
+
+                // Insert help text after the container
+                objectClassesContainer.parentNode.insertBefore(helpText, objectClassesContainer.nextSibling);
+            }
         }
 
         // Function to toggle help text visibility
@@ -1236,8 +1376,8 @@
                 // Set up handlers before starting process
                 setupPythonHandlers();
 
-                // Convert object classes string to array of numbers
-                const objectClassesArray = settings.objectClasses.value.split(',').map(x => parseInt(x.trim()));
+                // Get selected object classes from toggle buttons
+                const objectClassesArray = getSelectedObjectClasses();
 
                 // Show debug panel if debug mode is enabled
                 if (settings.debugMode.checked) {
@@ -1652,7 +1792,7 @@
                 setupPythonHandlers();
 
                 // Get current settings
-                const objectClassesArray = settings.objectClasses.value.split(',').map(x => parseInt(x.trim()));
+                const objectClassesArray = getSelectedObjectClasses();
                 
                 // Prepare options object
                 const options = {
@@ -1880,7 +2020,7 @@
                 skipFrames: document.getElementById('skipFrames').value,
                 confThreshold: document.getElementById('confThreshold').value,
                 modelSize: document.getElementById('modelSize').value,
-                objectClasses: document.getElementById('objectClasses').value,
+                objectClasses: getSelectedObjectClasses(),
                 trackCount: document.getElementById('trackCount').value,
                 
                 // Crop settings
@@ -1932,7 +2072,7 @@
                 if (formData.skipFrames) document.getElementById('skipFrames').value = formData.skipFrames;
                 if (formData.confThreshold) document.getElementById('confThreshold').value = formData.confThreshold;
                 if (formData.modelSize) document.getElementById('modelSize').value = formData.modelSize;
-                if (formData.objectClasses) document.getElementById('objectClasses').value = formData.objectClasses;
+                if (formData.objectClasses) setSelectedObjectClasses(formData.objectClasses);
                 if (formData.trackCount) document.getElementById('trackCount').value = formData.trackCount;
                 
                 // Load crop settings
@@ -2061,6 +2201,211 @@
                 });
             });
         });
+
+        // Object classes definitions
+        const objectClasses = [
+            { id: 0, name: 'person' },
+            { id: 1, name: 'bicycle' },
+            { id: 2, name: 'car' },
+            { id: 3, name: 'motorcycle' },
+            { id: 4, name: 'airplane' },
+            { id: 5, name: 'bus' },
+            { id: 6, name: 'train' },
+            { id: 7, name: 'truck' },
+            { id: 8, name: 'boat' },
+            { id: 9, name: 'traffic light' },
+            { id: 10, name: 'fire hydrant' },
+            { id: 11, name: 'stop sign' },
+            { id: 12, name: 'parking meter' },
+            { id: 13, name: 'bench' },
+            { id: 14, name: 'bird' },
+            { id: 15, name: 'cat' },
+            { id: 16, name: 'dog' },
+            { id: 17, name: 'horse' },
+            { id: 18, name: 'sheep' },
+            { id: 19, name: 'cow' },
+            { id: 20, name: 'elephant' },
+            { id: 21, name: 'bear' },
+            { id: 22, name: 'zebra' },
+            { id: 23, name: 'giraffe' },
+            { id: 24, name: 'backpack' },
+            { id: 25, name: 'umbrella' },
+            { id: 26, name: 'handbag' },
+            { id: 27, name: 'tie' },
+            { id: 28, name: 'suitcase' },
+            { id: 29, name: 'frisbee' },
+            { id: 30, name: 'skis' },
+            { id: 31, name: 'snowboard' },
+            { id: 32, name: 'sports ball' },
+            { id: 33, name: 'kite' },
+            { id: 34, name: 'baseball bat' },
+            { id: 35, name: 'baseball glove' },
+            { id: 36, name: 'skateboard' },
+            { id: 37, name: 'surfboard' },
+            { id: 38, name: 'tennis racket' },
+            { id: 39, name: 'bottle' },
+            { id: 40, name: 'wine glass' },
+            { id: 41, name: 'cup' },
+            { id: 42, name: 'fork' },
+            { id: 43, name: 'knife' },
+            { id: 44, name: 'spoon' },
+            { id: 45, name: 'bowl' },
+            { id: 46, name: 'banana' },
+            { id: 47, name: 'apple' },
+            { id: 48, name: 'sandwich' },
+            { id: 49, name: 'orange' },
+            { id: 50, name: 'broccoli' },
+            { id: 51, name: 'carrot' },
+            { id: 52, name: 'hot dog' },
+            { id: 53, name: 'pizza' },
+            { id: 54, name: 'donut' },
+            { id: 55, name: 'cake' },
+            { id: 56, name: 'chair' },
+            { id: 57, name: 'couch' },
+            { id: 58, name: 'potted plant' },
+            { id: 59, name: 'bed' },
+            { id: 60, name: 'dining table' },
+            { id: 61, name: 'toilet' },
+            { id: 62, name: 'tv' },
+            { id: 63, name: 'laptop' },
+            { id: 64, name: 'mouse' },
+            { id: 65, name: 'remote' },
+            { id: 66, name: 'keyboard' },
+            { id: 67, name: 'cell phone' },
+            { id: 68, name: 'microwave' },
+            { id: 69, name: 'oven' },
+            { id: 70, name: 'toaster' },
+            { id: 71, name: 'sink' },
+            { id: 72, name: 'refrigerator' },
+            { id: 73, name: 'book' },
+            { id: 74, name: 'clock' },
+            { id: 75, name: 'vase' },
+            { id: 76, name: 'scissors' },
+            { id: 77, name: 'teddy bear' },
+            { id: 78, name: 'hair drier' },
+            { id: 79, name: 'toothbrush' }
+        ];
+
+        // Common object classes (person, car, bicycle, motorcycle, bus, truck, dog, cat, chair, couch)
+        const commonObjectClasses = [0, 2, 1, 3, 5, 7, 16, 15, 56, 57];
+
+        // Generate object class toggle buttons
+        function generateObjectClassButtons() {
+            const grid = document.getElementById('objectClassesGrid');
+            grid.innerHTML = '';
+
+            objectClasses.forEach(objClass => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'object-class-btn px-2 py-1 text-xs border rounded cursor-pointer transition-colors';
+                button.dataset.classId = objClass.id;
+                button.textContent = `${objClass.id}: ${objClass.name}`;
+                
+                // Set initial state (only person selected by default)
+                if (objClass.id === 0) {
+                    button.classList.add('bg-blue-500', 'text-white', 'border-blue-600');
+                    button.classList.remove('bg-gray-200', 'text-gray-700', 'border-gray-300', 'hover:bg-gray-300');
+                } else {
+                    button.classList.add('bg-gray-200', 'text-gray-700', 'border-gray-300', 'hover:bg-gray-300');
+                    button.classList.remove('bg-blue-500', 'text-white', 'border-blue-600');
+                }
+
+                button.addEventListener('click', () => {
+                    toggleObjectClass(objClass.id, button);
+                });
+
+                grid.appendChild(button);
+            });
+        }
+
+        // Toggle object class selection
+        function toggleObjectClass(classId, button) {
+            const isSelected = button.classList.contains('bg-blue-500');
+            
+            if (isSelected) {
+                button.classList.remove('bg-blue-500', 'text-white', 'border-blue-600');
+                button.classList.add('bg-gray-200', 'text-gray-700', 'border-gray-300', 'hover:bg-gray-300');
+            } else {
+                button.classList.add('bg-blue-500', 'text-white', 'border-blue-600');
+                button.classList.remove('bg-gray-200', 'text-gray-700', 'border-gray-300', 'hover:bg-gray-300');
+            }
+            
+            // Save form values when object classes change
+            saveFormValues();
+        }
+
+        // Get selected object classes as array
+        function getSelectedObjectClasses() {
+            const selectedButtons = document.querySelectorAll('.object-class-btn.bg-blue-500');
+            return Array.from(selectedButtons).map(button => parseInt(button.dataset.classId));
+        }
+
+        // Set selected object classes from array
+        function setSelectedObjectClasses(classIds) {
+            const buttons = document.querySelectorAll('.object-class-btn');
+            buttons.forEach(button => {
+                const classId = parseInt(button.dataset.classId);
+                const isSelected = classIds.includes(classId);
+                
+                if (isSelected) {
+                    button.classList.add('bg-blue-500', 'text-white', 'border-blue-600');
+                    button.classList.remove('bg-gray-200', 'text-gray-700', 'border-gray-300', 'hover:bg-gray-300');
+                } else {
+                    button.classList.remove('bg-blue-500', 'text-white', 'border-blue-600');
+                    button.classList.add('bg-gray-200', 'text-gray-700', 'border-gray-300', 'hover:bg-gray-300');
+                }
+            });
+        }
+
+        // Initialize object class buttons
+        generateObjectClassButtons();
+
+        // Add responsive grid functionality for Electron compatibility
+        function updateGridResponsiveness() {
+            const grid = document.getElementById('objectClassesGrid');
+            if (!grid) return;
+            
+            const containerWidth = grid.offsetWidth;
+            let columns = 3; // Default for mobile
+            
+            if (containerWidth >= 1024) {
+                columns = 6; // Large screens
+            } else if (containerWidth >= 768) {
+                columns = 5; // Medium screens
+            } else if (containerWidth >= 640) {
+                columns = 4; // Small screens
+            }
+            
+            grid.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+            
+            // Update debug info
+            const debugInfo = document.getElementById('gridDebugInfo');
+            if (debugInfo) {
+                debugInfo.textContent = `${containerWidth}px - ${columns} columns`;
+            }
+        }
+
+        // Add event listeners for object class control buttons
+        document.getElementById('selectAllClasses').addEventListener('click', () => {
+            setSelectedObjectClasses(objectClasses.map(c => c.id));
+            saveFormValues();
+        });
+
+        document.getElementById('deselectAllClasses').addEventListener('click', () => {
+            setSelectedObjectClasses([]);
+            saveFormValues();
+        });
+
+        document.getElementById('selectCommonClasses').addEventListener('click', () => {
+            setSelectedObjectClasses(commonObjectClasses);
+            saveFormValues();
+        });
+
+        // Add resize listener for responsive grid
+        window.addEventListener('resize', updateGridResponsiveness);
+        
+        // Initial call to set up responsive grid
+        setTimeout(updateGridResponsiveness, 100);
     </script>
 </body>
 </html>
