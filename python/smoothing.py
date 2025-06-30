@@ -39,6 +39,9 @@ class CropWindowSmoother:
         # Apply inertia-based smoothing
         smoothed_windows = self._apply_inertia(smoothed_windows)
         
+        # Ensure all values are finite before converting to int
+        smoothed_windows = np.nan_to_num(smoothed_windows, nan=0.0, posinf=0.0, neginf=0.0)
+        
         # Convert back to list of lists
         return smoothed_windows.astype(int).tolist()
     
@@ -47,7 +50,11 @@ class CropWindowSmoother:
         n_frames = len(windows)
         smoothed = np.copy(windows).astype(float)
         
-        half_window = self.window_size // 2
+        # Handle edge case where window_size is 0 or 1
+        if self.window_size <= 1:
+            return smoothed
+        
+        half_window = max(1, self.window_size // 2)
         
         for i in range(n_frames):
             # Calculate window bounds
@@ -55,7 +62,9 @@ class CropWindowSmoother:
             end = min(n_frames, i + half_window + 1)
             
             # Calculate weights (higher for frames closer to current frame)
-            weights = np.exp(-0.5 * ((np.arange(start, end) - i) / (half_window / 2)) ** 2)
+            # Use a minimum half_window of 1 to avoid division by zero
+            effective_half_window = max(1, half_window)
+            weights = np.exp(-0.5 * ((np.arange(start, end) - i) / effective_half_window) ** 2)
             weights = weights / np.sum(weights)
             
             # Apply weighted average
