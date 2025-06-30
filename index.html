@@ -1168,9 +1168,13 @@
         // Function to clean up Python output handlers
         function cleanupPythonHandlers() {
             if (currentPythonHandlers) {
-                // Remove both output and complete handlers
-                window.electronAPI.removePythonOutputListener(currentPythonHandlers.pythonOutputHandler);
-                window.electronAPI.removePythonScriptCompleteListener(currentPythonHandlers.scriptCompleteHandler);
+                // Call the cleanup functions returned by the API
+                if (currentPythonHandlers.cleanupOutput) {
+                    currentPythonHandlers.cleanupOutput();
+                }
+                if (currentPythonHandlers.cleanupComplete) {
+                    currentPythonHandlers.cleanupComplete();
+                }
                 currentPythonHandlers = null;
             }
             isProcessing = false;
@@ -1181,82 +1185,85 @@
             // Clean up any existing handlers first
             cleanupPythonHandlers();
             
-            // Only set up new handlers if we're not already processing
-            if (!isProcessing) {
-                isProcessing = true;
+            // Set up new handlers
+            isProcessing = true;
+            
+            const pythonOutputHandler = (event, message) => {
+                if (isProcessing) {  // Only append output if we're still processing
+                    appendDebugOutput(message, 'info');
+                }
+            };
+            
+            const scriptCompleteHandler = (event, result) => {
+                // Clean up handlers immediately when script completes
+                cleanupPythonHandlers();
                 
-                const pythonOutputHandler = (event, message) => {
-                    if (isProcessing) {  // Only append output if we're still processing
-                        appendDebugOutput(message, 'info');
-                    }
-                };
-                
-                const scriptCompleteHandler = (event, result) => {
-                    // Clean up handlers immediately when script completes
-                    cleanupPythonHandlers();
+                if (result.success) {
+                    showStatus(`Video processing completed successfully!\nOutput saved to: ${result.outputPath}`, 'success');
+                    appendDebugOutput('Processing completed successfully!', 'success');
+                    appendDebugOutput(`Output saved to: ${result.outputPath}`, 'success');
                     
-                    if (result.success) {
-                        showStatus(`Video processing completed successfully!\nOutput saved to: ${result.outputPath}`, 'success');
-                        appendDebugOutput('Processing completed successfully!', 'success');
-                        appendDebugOutput(`Output saved to: ${result.outputPath}`, 'success');
-                        
-                        // If in single video mode, load the output video
-                        if (!isBatchProcessing) {
-                            loadOutputVideo(result.outputPath).then(() => {
-                                switchVideoTab('output');
-                            });
-                        } else {
-                            // Update batch queue item status
-                            const video = batchQueue[currentBatchIndex];
-                            if (video) {
-                                video.status = 'completed';
-                                video.progress = 100;
-                                updateQueueItemStatus(video.path, 'completed', 100);
-                                updateBatchProgress();
-                            }
-                        }
-                    } else {
-                        showStatus(`Error: ${result.error}`, 'error');
-                        appendDebugOutput(`Error: ${result.error}`, 'error');
-                        if (result.stack) {
-                            appendDebugOutput(result.stack, 'error');
-                        }
-                        
-                        // If in batch mode, update queue item status
-                        if (isBatchProcessing) {
-                            const video = batchQueue[currentBatchIndex];
-                            if (video) {
-                                video.status = 'failed';
-                                updateQueueItemStatus(video.path, 'failed', 0, result.error);
-                                updateBatchProgress();
-                            }
-                        }
-                    }
-
-                    // Reset UI state if in single video mode
+                    // If in single video mode, load the output video
                     if (!isBatchProcessing) {
-                        processButton.classList.remove('hidden');
-                        cancelButton.classList.add('hidden');
-                        processButton.disabled = false;
-                        selectFileButton.disabled = false;
-                        selectOutputDirButton.disabled = false;
-                        outputFilenameInput.disabled = false;
-                        currentProcess = null;
+                        loadOutputVideo(result.outputPath).then(() => {
+                            switchVideoTab('output');
+                        });
                     } else {
-                        // Process next video in batch if not paused
-                        if (isBatchProcessing) {
-                            processNextVideo();
+                        // Update batch queue item status
+                        const video = batchQueue[currentBatchIndex];
+                        if (video) {
+                            video.status = 'completed';
+                            video.progress = 100;
+                            updateQueueItemStatus(video.path, 'completed', 100);
+                            updateBatchProgress();
                         }
                     }
-                };
+                } else {
+                    showStatus(`Error: ${result.error}`, 'error');
+                    appendDebugOutput(`Error: ${result.error}`, 'error');
+                    if (result.stack) {
+                        appendDebugOutput(result.stack, 'error');
+                    }
+                    
+                    // If in batch mode, update queue item status
+                    if (isBatchProcessing) {
+                        const video = batchQueue[currentBatchIndex];
+                        if (video) {
+                            video.status = 'failed';
+                            updateQueueItemStatus(video.path, 'failed', 0, result.error);
+                            updateBatchProgress();
+                        }
+                    }
+                }
 
-                // Set up new handlers
-                window.electronAPI.onPythonOutput(pythonOutputHandler);
-                window.electronAPI.onPythonScriptComplete(scriptCompleteHandler);
-                
-                // Store current handlers
-                currentPythonHandlers = { pythonOutputHandler, scriptCompleteHandler };
-            }
+                // Reset UI state if in single video mode
+                if (!isBatchProcessing) {
+                    processButton.classList.remove('hidden');
+                    cancelButton.classList.add('hidden');
+                    processButton.disabled = false;
+                    selectFileButton.disabled = false;
+                    selectOutputDirButton.disabled = false;
+                    outputFilenameInput.disabled = false;
+                    currentProcess = null;
+                } else {
+                    // Process next video in batch if not paused
+                    if (isBatchProcessing) {
+                        processNextVideo();
+                    }
+                }
+            };
+
+            // Set up new handlers and store cleanup functions
+            const cleanupOutput = window.electronAPI.onPythonOutput(pythonOutputHandler);
+            const cleanupComplete = window.electronAPI.onPythonScriptComplete(scriptCompleteHandler);
+            
+            // Store current handlers and cleanup functions
+            currentPythonHandlers = { 
+                pythonOutputHandler, 
+                scriptCompleteHandler,
+                cleanupOutput,
+                cleanupComplete
+            };
         }
 
         // Add settings help text
