@@ -729,6 +729,27 @@
                                     <input type="number" id="maxWorkers" value="6" min="1" max="32" class="input w-24">
                                     <span class="text-sm text-gray-600 italic">(Number of CPU cores to use)</span>
                                 </div>
+                                
+                                <!-- Large video warning -->
+                                <div id="largeVideoWarning" class="hidden bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-3">
+                                    <div class="flex items-start">
+                                        <svg class="w-5 h-5 text-yellow-600 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        <div>
+                                            <h4 class="text-sm font-medium text-yellow-800">Large Video Detected</h4>
+                                            <p class="text-sm text-yellow-700 mt-1">
+                                                This video is large and may require more memory. Consider:
+                                            </p>
+                                            <ul class="text-sm text-yellow-700 mt-1 list-disc list-inside">
+                                                <li>Reducing Max Workers to 2-4</li>
+                                                <li>Increasing Skip Frames to 15-30</li>
+                                                <li>Using a smaller model size (Nano or Small)</li>
+                                                <li>Closing other applications to free memory</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -1080,8 +1101,62 @@
                 outputDirInput.value = defaultOutputDir;
                 await updateVideoPreview(filePath);
                 processButton.disabled = false;
+                
+                // Check if this is a large video and show warning
+                checkVideoSize(filePath);
             }
         });
+        
+        // Function to check video size and show warning
+        function checkVideoSize(videoPath) {
+            const video = document.getElementById('previewVideo');
+            const warning = document.getElementById('largeVideoWarning');
+            
+            if (video.videoWidth && video.videoHeight && video.duration) {
+                const totalPixels = video.videoWidth * video.videoHeight;
+                const totalFrames = video.duration * video.fps || video.duration * 30; // Estimate if fps not available
+                
+                // Consider video large if:
+                // - Resolution > 1920x1080 (2MP)
+                // - Duration > 60 seconds
+                // - Total frames > 1800
+                const isLarge = totalPixels > 1920 * 1080 || video.duration > 60 || totalFrames > 1800;
+                
+                if (isLarge) {
+                    warning.classList.remove('hidden');
+                    
+                    // Auto-adjust settings for large videos
+                    const maxWorkers = document.getElementById('maxWorkers');
+                    const skipFrames = document.getElementById('skipFrames');
+                    const modelSizeButtons = document.querySelectorAll('.model-size-btn');
+                    
+                    // Reduce max workers if currently high
+                    if (parseInt(maxWorkers.value) > 4) {
+                        maxWorkers.value = 4;
+                        console.log('Auto-adjusted max workers to 4 for large video');
+                    }
+                    
+                    // Increase skip frames if currently low
+                    if (parseInt(skipFrames.value) < 15) {
+                        skipFrames.value = 15;
+                        console.log('Auto-adjusted skip frames to 15 for large video');
+                    }
+                    
+                    // Suggest smaller model size
+                    const currentModelSize = document.querySelector('.model-size-btn.selected');
+                    if (currentModelSize && ['l', 'x'].includes(currentModelSize.dataset.value)) {
+                        // Find nano or small button and suggest it
+                        const smallerButton = document.querySelector('.model-size-btn[data-value="n"]') || 
+                                            document.querySelector('.model-size-btn[data-value="s"]');
+                        if (smallerButton) {
+                            console.log(`Consider using ${smallerButton.textContent.trim()} model for better performance with large videos`);
+                        }
+                    }
+                } else {
+                    warning.classList.add('hidden');
+                }
+            }
+        }
 
         selectOutputDirButton.addEventListener('click', async () => {
             const dirPath = await window.electronAPI.selectDirectory();
