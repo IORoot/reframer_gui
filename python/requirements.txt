@@ -5,3 +5,5 @@ matplotlib
 ultralytics
 torch
 opencv-contrib-python
+# Optional: psutil (for memory monitoring)
+psutil

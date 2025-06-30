@@ -3,6 +3,9 @@ import os
 import time
 import cv2
 import numpy as np
+import gc
+import traceback
+import sys
 from concurrent.futures import ThreadPoolExecutor
 from video_processor import VideoProcessor
 from object_detector import ObjectDetector
@@ -10,11 +13,42 @@ from object_tracker import ObjectTracker
 from crop_calculator import CropCalculator
 from smoothing import CropWindowSmoother
 
+# Try to import psutil for memory monitoring, but don't fail if it's not available
+try:
+    import psutil
+    PSUTIL_AVAILABLE = True
+except ImportError:
+    PSUTIL_AVAILABLE = False
+    print("Warning: psutil not available, memory monitoring disabled")
 
 
+def get_memory_usage():
+    """Get current memory usage in MB."""
+    if PSUTIL_AVAILABLE:
+        try:
+            process = psutil.Process(os.getpid())
+            return process.memory_info().rss / 1024 / 1024
+        except Exception as e:
+            print(f"Error getting memory usage: {e}")
+            return 0
+    else:
+        return 0
 
 
+def log_memory_usage(stage):
+    """Log memory usage at different stages."""
+    if PSUTIL_AVAILABLE:
+        memory_mb = get_memory_usage()
+        print(f"Memory usage at {stage}: {memory_mb:.1f} MB")
+    else:
+        print(f"Memory monitoring not available at {stage}")
 
+
+def start_gui():
+    """Start the GUI mode (placeholder for future implementation)."""
+    print("GUI mode not implemented yet. Please use command line arguments.")
+    print("Example: python main.py --input video.mp4 --output output.mp4")
+    sys.exit(1)
 
 
 def parse_args():
@@ -56,297 +90,311 @@ def parse_args():
     # debugging
     parser.add_argument('--debug', action='store_true', default=False, help='Enable debuging mode for CLI. See debug_logs folder.')
 
-
     return parser.parse_args()
-
-
-
 
 
 def process_keyframe(frame_idx, frame, detector, tracker, tracked_objects_by_frame, track_count=1):
     """Process a keyframe with detection and tracking."""
-    # print(f"🐤 main : process_keyframe: {frame_idx}")
-
-    # Detect objects in frame
-    detected_objects = detector.detect(
-        frame,              # 🕵️‍♂️ Detect objects in the frame
-        top_n=track_count,  # 🏷️ Get the top N detection (highest confidence) 
-    )
-    
-    # Update tracker with new detections
-    tracked_objects = tracker.update(frame, detected_objects)
-    tracked_objects_by_frame[frame_idx] = tracked_objects
-    
-    return frame_idx
-
-
-
+    try:
+        # Detect objects in frame
+        detected_objects = detector.detect(
+            frame,              # 🕵️‍♂️ Detect objects in the frame
+            top_n=track_count,  # 🏷️ Get the top N detection (highest confidence) 
+        )
+        
+        # Update tracker with new detections
+        tracked_objects = tracker.update(frame, detected_objects)
+        tracked_objects_by_frame[frame_idx] = tracked_objects
+        
+        return frame_idx
+    except Exception as e:
+        print(f"Error processing keyframe {frame_idx}: {e}")
+        print(f"Traceback: {traceback.format_exc()}")
+        # Return None to indicate failure
+        return None
 
 
 def main(args=None):
+    try:
+        if args is None:
+            args = parse_args()
+        
+        # Debug output to verify parameters
+        print(f"DEBUG: Debug mode enabled: {args.debug}")
+        print(f"DEBUG: Current working directory: {os.getcwd()}")
+        print(f"DEBUG: All arguments: {vars(args)}")
+        
+        log_memory_usage("start")
+        
+        # Initialize components with YOLOv8
+        video_processor = VideoProcessor()
 
-    if args is None:
-        args = parse_args()
-    
-    # Debug output to verify parameters
-    print(f"DEBUG: Debug mode enabled: {args.debug}")
-    print(f"DEBUG: Current working directory: {os.getcwd()}")
-    print(f"DEBUG: All arguments: {vars(args)}")
-    
-    # Initialize components with YOLOv8
-    video_processor = VideoProcessor()
+        detector = ObjectDetector(
+            confidence_threshold=args.conf_threshold,   # 🕵️‍♂️ Confidence threshold for object detection (0-1).
+            model_size=args.model_size,                # 📏 Size of the YOLOv8 model (n=small, s=medium, m=large, l=xlarge).
+            classes=args.object_classes,               # 🏷️ Classes to detect (0=person, 1=bicycle, 4=car, 7=truck, etc...).
+            debug=args.debug,                               # 🐛 If True, saves debug images and logs to help you visualize decisions.
+            input_video_path=args.input,               # 📁 Path to input video (for debug log location)
+        )
 
+        tracker = ObjectTracker(
+            max_disappeared=30,     # 🕵️‍♂️ Number of frames an object can be missing before being considered lost.
+            max_distance=50         # 🔍 Maximum distance for re-identifying lost objects (in pixels).
+        )
 
-    detector = ObjectDetector(
-        confidence_threshold=args.conf_threshold,   # 🕵️‍♂️ Confidence threshold for object detection (0-1).
-        model_size=args.model_size,                # 📏 Size of the YOLOv8 model (n=small, s=medium, m=large, l=xlarge).
-        classes=args.object_classes,               # 🏷️ Classes to detect (0=person, 1=bicycle, 4=car, 7=truck, etc...).
-        debug=args.debug,                               # 🐛 If True, saves debug images and logs to help you visualize decisions.
-        input_video_path=args.input,               # 📁 Path to input video (for debug log location)
-    )
+        crop_calculator = CropCalculator(
+            target_ratio=args.target_ratio,         # 📐 Desired aspect ratio of the crop (e.g., 16/9 for widescreen). Example: 1.77
+            padding_ratio=args.padding_ratio,       # ➡️ Add 10% padding around the detected area to avoid tight crops.
+            size_weight=args.size_weight,           # 📏 How much object size matters (larger objects are more important).
+            center_weight=args.center_weight,       # 🎯 How much being close to the frame center matters (centered objects preferred).
+            motion_weight=args.motion_weight,       # 🎥 How much moving objects are prioritized (good for tracking action).
+            history_weight=args.history_weight,     # 🕰️ How much previous frames affect the crop (smoothness over time). Set 0 to ignore history.
+            saliency_weight=args.saliency_weight,   # 👀 How much visual "importance" (saliency maps) matters (e.g., bright or attention-grabbing regions).
+            debug=args.debug,                       # 🐛 If True, saves debug images and logs to help you visualize decisions.
+            face_detection=args.face_detection,     # 👤 If True, uses face to enhance detection in the crop. Uses weighted averages.
+            weighted_center=args.weighted_center,   # ⚖️ If True, uses weighted average of detected objects' centers for crop center.
+            blend_saliency=args.blend_saliency,     # 🌈 If True, blends saliency map with detected objects to enhance crop.
+            input_video_path=args.input,            # 📁 Path to input video (for debug log location)
+        )
 
-    tracker = ObjectTracker(
-        max_disappeared=30,     # 🕵️‍♂️ Number of frames an object can be missing before being considered lost.
-        max_distance=50         # 🔍 Maximum distance for re-identifying lost objects (in pixels).
-    )
+        smoother = CropWindowSmoother(
+            window_size=args.smoothing_window,      # 📅 Number of frames for smoothing (e.g., 30 for 1 second at 30 FPS).
+            position_inertia=args.position_inertia, # 🔄 How much the position of the crop should "stick" to the previous frame (0-1).
+            size_inertia=args.size_inertia          # 📏 How much the size of the crop should "stick" to the previous frame (0-1).
+        )
+        
+        # Load video and get properties
+        video_info = video_processor.load_video(args.input)
+        total_frames = video_info['total_frames']
+        fps = video_info['fps']
+        width = video_info['width']
+        height = video_info['height']
+        
+        print(f"Processing video: {args.input}")
+        print(f"Total frames: {total_frames}, FPS: {fps}, Resolution: {width}x{height}")
+        
+        # Adjust max_workers for large videos to prevent memory issues
+        if total_frames > 1000 or width * height > 1920 * 1080:
+            # For large videos, reduce max_workers to prevent memory issues
+            original_max_workers = args.max_workers
+            args.max_workers = min(args.max_workers, 4)
+            if args.max_workers != original_max_workers:
+                print(f"Reduced max_workers from {original_max_workers} to {args.max_workers} for large video")
+        
+        # Process frames
+        tracked_objects_by_frame = {}
+        
+        start_time = time.time()
+        
+        log_memory_usage("after initialization")
 
+        # First pass: detect and track objects on keyframes only
+        print("Phase 1: Detecting and tracking objects...")
+        
+        # Determine keyframes
+        keyframes = list(range(0, total_frames, args.skip_frames))
+        
+        # Use ThreadPoolExecutor for parallel processing of keyframes
+        with ThreadPoolExecutor(max_workers=args.max_workers) as executor:
+            # Create a list to store futures
+            futures = []
+            
+            # Process keyframes
+            for frame_idx in keyframes:
+                # Set position to keyframe
+                video_processor.cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
+                ret, frame = video_processor.cap.read()
+                
+                if not ret:
+                    continue
+                
+                # Submit task to executor
+                future = executor.submit(
+                    process_keyframe, 
+                    frame_idx, 
+                    frame, 
+                    detector, 
+                    tracker, 
+                    tracked_objects_by_frame,
+                    args.track_count
+                )
+                futures.append(future)
+                
+                # Print progress every 10 keyframes
+                if len(futures) % 10 == 0:
+                    print(f"\r🤖 Submitted {len(futures)}/{len(keyframes)} keyframes for processing", end='', flush=True)
+            
+            print(f"\n")
 
-    crop_calculator = CropCalculator(
-        target_ratio=args.target_ratio,         # 📐 Desired aspect ratio of the crop (e.g., 16/9 for widescreen). Example: 1.77
-        padding_ratio=args.padding_ratio,       # ➡️ Add 10% padding around the detected area to avoid tight crops.
-        size_weight=args.size_weight,           # 📏 How much object size matters (larger objects are more important).
-        center_weight=args.center_weight,       # 🎯 How much being close to the frame center matters (centered objects preferred).
-        motion_weight=args.motion_weight,       # 🎥 How much moving objects are prioritized (good for tracking action).
-        history_weight=args.history_weight,     # 🕰️ How much previous frames affect the crop (smoothness over time). Set 0 to ignore history.
-        saliency_weight=args.saliency_weight,   # 👀 How much visual "importance" (saliency maps) matters (e.g., bright or attention-grabbing regions).
-        debug=args.debug,                       # 🐛 If True, saves debug images and logs to help you visualize decisions.
-        face_detection=args.face_detection,     # 👤 If True, uses face to enhance detection in the crop. Uses weighted averages.
-        weighted_center=args.weighted_center,   # ⚖️ If True, uses weighted average of detected objects' centers for crop center.
-        blend_saliency=args.blend_saliency,     # 🌈 If True, blends saliency map with detected objects to enhance crop.
-        input_video_path=args.input,            # 📁 Path to input video (for debug log location)
-    )
+            # Wait for all futures to complete
+            for i, future in enumerate(futures):
+                try:
+                    result = future.result()  # This will raise any exceptions that occurred
+                    if result is None:
+                        print(f"Warning: Keyframe {i} failed to process")
+                    if (i + 1) % 10 == 0:
+                        print(f"\r🚀 Processed {i + 1}/{len(keyframes)} keyframes", end='', flush=True)
+                        # Force garbage collection periodically
+                        gc.collect()
+                        log_memory_usage(f"after processing {i + 1} keyframes")
+                except Exception as e:
+                    print(f"Error processing keyframe {i}: {e}")
+                    print(f"Traceback: {traceback.format_exc()}")
+                    continue
 
+        log_memory_usage("after detection phase")
 
-    smoother = CropWindowSmoother(
-        window_size=args.smoothing_window,      # 📅 Number of frames for smoothing (e.g., 30 for 1 second at 30 FPS).
-        position_inertia=args.position_inertia, # 🔄 How much the position of the crop should "stick" to the previous frame (0-1).
-        size_inertia=args.size_inertia          # 📏 How much the size of the crop should "stick" to the previous frame (0-1).
-    )
-    
-    # Load video and get properties
-    video_info = video_processor.load_video(args.input)
-    total_frames = video_info['total_frames']
-    fps = video_info['fps']
-    width = video_info['width']
-    height = video_info['height']
-    
-    print(f"Processing video: {args.input}")
-    print(f"Total frames: {total_frames}, FPS: {fps}, Resolution: {width}x{height}")
-    
-    # Process frames
-    tracked_objects_by_frame = {}
-    
-    start_time = time.time()
-    
-
-
-
-
-
-
-    # First pass: detect and track objects on keyframes only
-    print("Phase 1: Detecting and tracking objects...")
-    
-    # Determine keyframes
-    keyframes = list(range(0, total_frames, args.skip_frames))
-    
-    # Use ThreadPoolExecutor for parallel processing of keyframes
-    with ThreadPoolExecutor(max_workers=args.max_workers) as executor:
-        # Create a list to store futures
-        futures = []
+        # Second pass: calculate crop windows for keyframes
+        print("Phase 2: Calculating crop windows for keyframes...")
+        
+        # Pre-allocate crop windows array
+        crop_windows = [None] * total_frames
         
         # Process keyframes
         for frame_idx in keyframes:
-            # Set position to keyframe
+            if frame_idx not in tracked_objects_by_frame:
+                continue
+                
+            objects = tracked_objects_by_frame[frame_idx]
+            
+            # Get the actual frame for additional analysis
             video_processor.cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
             ret, frame = video_processor.cap.read()
             
             if not ret:
                 continue
             
-            # Submit task to executor
-            future = executor.submit(
-                process_keyframe, 
-                frame_idx, 
-                frame, 
-                detector, 
-                tracker, 
-                tracked_objects_by_frame,
-                args.track_count
-            )
-            futures.append(future)
-            
-            # Print progress every 10 keyframes
-            if len(futures) % 10 == 0:
-                print(f"\r🤖 Submitted {len(futures)}/{len(keyframes)} keyframes for processing", end='', flush=True)
-        
-        print(f"\n")
-
-        # Wait for all futures to complete
-        for i, future in enumerate(futures):
-            future.result()  # This will raise any exceptions that occurred
-            if (i + 1) % 10 == 0:
-                print(f"\r🚀 Processed {i + 1}/{len(keyframes)} keyframes", end='', flush=True)
-    
-
-
-
-
-
-
-
-
-
-    # Second pass: calculate crop windows for keyframes
-    print("Phase 2: Calculating crop windows for keyframes...")
-    
-    # Pre-allocate crop windows array
-    crop_windows = [None] * total_frames
-    
-    # Process keyframes
-    for frame_idx in keyframes:
-        if frame_idx not in tracked_objects_by_frame:
-            continue
-            
-        objects = tracked_objects_by_frame[frame_idx]
-        
-        # Get the actual frame for additional analysis
-        video_processor.cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
-        ret, frame = video_processor.cap.read()
-        
-        if not ret:
-            continue
-        
-        # Calculate optimal crop window
-        crop_window = crop_calculator.calculate(objects, width, height, frame)
-        crop_windows[frame_idx] = crop_window
-        
-        if frame_idx % 100 == 0:
-            print(f"\r✂️ Calculated crop window for keyframe {frame_idx}/{total_frames}", end='', flush=True)
-    
-
-
-
-
-
-
-
-
-
-
-    # Phase 3: Interpolate crop windows for non-keyframes
-    print("Phase 3: Interpolating crop windows for non-keyframes...")
-    
-    # Fast interpolation using numpy
-    keyframe_indices = np.array(keyframes)
-    keyframe_crop_windows = np.array([crop_windows[i] for i in keyframes if crop_windows[i] is not None])
-    
-    if len(keyframe_crop_windows) > 1:
-        # For each frame, find the nearest keyframes and interpolate
-        for i in range(total_frames):
-            if crop_windows[i] is not None:
+            try:
+                # Calculate optimal crop window
+                crop_window = crop_calculator.calculate(objects, width, height, frame)
+                crop_windows[frame_idx] = crop_window
+            except Exception as e:
+                print(f"Error calculating crop window for frame {frame_idx}: {e}")
                 continue
-                
-            # Find nearest keyframes
-            next_idx = keyframe_indices[keyframe_indices > i]
-            prev_idx = keyframe_indices[keyframe_indices < i]
             
-            if len(next_idx) == 0 and len(prev_idx) > 0:
-                # After last keyframe, use last keyframe
-                crop_windows[i] = crop_windows[prev_idx[-1]]
-            elif len(prev_idx) == 0 and len(next_idx) > 0:
-                # Before first keyframe, use first keyframe
-                crop_windows[i] = crop_windows[next_idx[0]]
-            elif len(prev_idx) > 0 and len(next_idx) > 0:
-                # Interpolate between keyframes
-                prev_frame = prev_idx[-1]
-                next_frame = next_idx[0]
-                
-                if crop_windows[prev_frame] is not None and crop_windows[next_frame] is not None:
-                    # Calculate interpolation factor
-                    alpha = (i - prev_frame) / (next_frame - prev_frame)
+            if frame_idx % 100 == 0:
+                print(f"\r✂️ Calculated crop window for keyframe {frame_idx}/{total_frames}", end='', flush=True)
+
+        log_memory_usage("after crop calculation")
+
+        # Phase 3: Interpolate crop windows for non-keyframes
+        print("Phase 3: Interpolating crop windows for non-keyframes...")
+        
+        # Fast interpolation using numpy
+        keyframe_indices = np.array(keyframes)
+        keyframe_crop_windows = np.array([crop_windows[i] for i in keyframes if crop_windows[i] is not None])
+        
+        if len(keyframe_crop_windows) > 1:
+            # For each frame, find the nearest keyframes and interpolate
+            for i in range(total_frames):
+                if crop_windows[i] is not None:
+                    continue
                     
-                    # Linear interpolation
-                    prev_crop = np.array(crop_windows[prev_frame])
-                    next_crop = np.array(crop_windows[next_frame])
-                    interp_crop = prev_crop * (1 - alpha) + next_crop * alpha
-                    crop_windows[i] = [int(x) for x in interp_crop]
-    
-    # Fill any remaining None values with center crop
-    for i in range(total_frames):
-        if crop_windows[i] is None:
-            # Use center crop as fallback
-            crop_height = height
-            crop_width = int(crop_height * args.target_ratio)
-            if crop_width > width:
-                crop_width = width
-                crop_height = int(crop_width / args.target_ratio)
-            x = int((width - crop_width) / 2)
-            y = int((height - crop_height) / 2)
-            crop_windows[i] = [x, y, crop_width, crop_height]
-    
+                # Find nearest keyframes
+                next_idx = keyframe_indices[keyframe_indices > i]
+                prev_idx = keyframe_indices[keyframe_indices < i]
+                
+                if len(next_idx) == 0 and len(prev_idx) > 0:
+                    # After last keyframe, use last keyframe
+                    crop_windows[i] = crop_windows[prev_idx[-1]]
+                elif len(prev_idx) == 0 and len(next_idx) > 0:
+                    # Before first keyframe, use first keyframe
+                    crop_windows[i] = crop_windows[next_idx[0]]
+                elif len(prev_idx) > 0 and len(next_idx) > 0:
+                    # Interpolate between keyframes
+                    prev_frame = prev_idx[-1]
+                    next_frame = next_idx[0]
+                    
+                    if crop_windows[prev_frame] is not None and crop_windows[next_frame] is not None:
+                        # Calculate interpolation factor
+                        alpha = (i - prev_frame) / (next_frame - prev_frame)
+                        
+                        # Linear interpolation
+                        prev_crop = np.array(crop_windows[prev_frame])
+                        next_crop = np.array(crop_windows[next_frame])
+                        interp_crop = prev_crop * (1 - alpha) + next_crop * alpha
+                        crop_windows[i] = [int(x) for x in interp_crop]
+        
+        # Fill any remaining None values with center crop
+        for i in range(total_frames):
+            if crop_windows[i] is None:
+                # Use center crop as fallback
+                crop_height = height
+                crop_width = int(crop_height * args.target_ratio)
+                if crop_width > width:
+                    crop_width = width
+                    crop_height = int(crop_width / args.target_ratio)
+                x = int((width - crop_width) / 2)
+                y = int((height - crop_height) / 2)
+                crop_windows[i] = [x, y, crop_width, crop_height]
 
+        log_memory_usage("after interpolation")
 
+        # Apply temporal smoothing to crop windows
+        print("Phase 4: Applying temporal smoothing..." if args.apply_smoothing else "Phase 4: No smoothing applied")
 
+        if args.apply_smoothing:
+            smoothed_windows = smoother.smooth(crop_windows)
+        else:
+            smoothed_windows = crop_windows
 
+        log_memory_usage("after smoothing")
 
-
-
-
-
-
-    # Apply temporal smoothing to crop windows
-    print("Phase 4: Applying temporal smoothing..." if args.apply_smoothing else "Phase 4: No smoothing applied")
-
-    if args.apply_smoothing:
-        smoothed_windows = smoother.smooth(crop_windows)
-    else:
-        smoothed_windows = crop_windows
-
-    
-
-
-
-
-
-
-
-
-
-
-    # Generate output video with cropped frames
-    print("Phase 5: Generating output video...")
-    video_processor.generate_output_video(
-        output_path=args.output,
-        crop_windows=smoothed_windows,
-        fps=fps
-    )
-    
-    # Finalize debug video if debug mode is enabled
-    if args.debug:
-        detector.finalize_debug_video()
-    
-    elapsed_time = time.time() - start_time
-    print(f"Video processing completed in {elapsed_time:.2f} seconds")
-    print(f"Output saved to: {args.output}")
-
-
-
+        # Generate output video with cropped frames
+        print("Phase 5: Generating output video...")
+        try:
+            video_processor.generate_output_video(
+                output_path=args.output,
+                crop_windows=smoothed_windows,
+                fps=fps
+            )
+        except Exception as e:
+            print(f"Error generating output video: {e}")
+            print(f"Traceback: {traceback.format_exc()}")
+            raise
+        
+        # Finalize debug video if debug mode is enabled
+        if args.debug:
+            detector.finalize_debug_video()
+        
+        elapsed_time = time.time() - start_time
+        print(f"Video processing completed in {elapsed_time:.2f} seconds")
+        print(f"Output saved to: {args.output}")
+        
+        log_memory_usage("end")
+        
+    except Exception as e:
+        print(f"Fatal error in main: {e}")
+        print(f"Traceback: {traceback.format_exc()}")
+        raise
+    finally:
+        # Clean up resources
+        try:
+            if 'video_processor' in locals():
+                del video_processor
+            if 'detector' in locals():
+                del detector
+            if 'tracker' in locals():
+                del tracker
+            if 'crop_calculator' in locals():
+                del crop_calculator
+            if 'smoother' in locals():
+                del smoother
+            gc.collect()
+        except Exception as cleanup_error:
+            print(f"Error during cleanup: {cleanup_error}")
 
 
 if __name__ in {"__main__", "__mp_main__"}:
-    import sys
-    if len(sys.argv) > 1:
-        main()
-    else:
-        start_gui()
+    try:
+        if len(sys.argv) > 1:
+            main()
+        else:
+            start_gui()
+    except KeyboardInterrupt:
+        print("\nProcess interrupted by user")
+        sys.exit(1)
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        print(f"Traceback: {traceback.format_exc()}")
+        sys.exit(1)

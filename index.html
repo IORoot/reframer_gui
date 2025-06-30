@@ -729,6 +729,27 @@
                                     <input type="number" id="maxWorkers" value="6" min="1" max="32" class="input w-24">
                                     <span class="text-sm text-gray-600 italic">(Number of CPU cores to use)</span>
                                 </div>
+                                
+                                <!-- Large video warning -->
+                                <div id="largeVideoWarning" class="hidden bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-3">
+                                    <div class="flex items-start">
+                                        <svg class="w-5 h-5 text-yellow-600 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        <div>
+                                            <h4 class="text-sm font-medium text-yellow-800">Large Video Detected</h4>
+                                            <p class="text-sm text-yellow-700 mt-1">
+                                                This video is large and may require more memory. Consider:
+                                            </p>
+                                            <ul class="text-sm text-yellow-700 mt-1 list-disc list-inside">
+                                                <li>Reducing Max Workers to 2-4</li>
+                                                <li>Increasing Skip Frames to 15-30</li>
+                                                <li>Using a smaller model size (Nano or Small)</li>
+                                                <li>Closing other applications to free memory</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -919,6 +940,13 @@
                 <div class="flex justify-between items-center p-2.5 bg-[#2d2d2d] border-b border-gray-200">
                     <h3 class="m-0 text-white text-base">Python Output</h3>
                     <div class="flex items-center gap-2">
+                        <button id="copyDebug" class="px-2 py-1 bg-[#444] text-white border-none rounded cursor-pointer text-sm hover:bg-[#555] flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"/>
+                                <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"/>
+                            </svg>
+                            Copy All
+                        </button>
                         <button id="toggleDebug" class="px-2 py-1 bg-[#444] text-white border-none rounded cursor-pointer text-sm hover:bg-[#555]">Collapse</button>
                         <button id="clearDebug" class="px-2 py-1 bg-[#444] text-white border-none rounded cursor-pointer text-sm hover:bg-[#555]">Clear</button>
                     </div>
@@ -1080,8 +1108,62 @@
                 outputDirInput.value = defaultOutputDir;
                 await updateVideoPreview(filePath);
                 processButton.disabled = false;
+                
+                // Check if this is a large video and show warning
+                checkVideoSize(filePath);
             }
         });
+        
+        // Function to check video size and show warning
+        function checkVideoSize(videoPath) {
+            const video = document.getElementById('previewVideo');
+            const warning = document.getElementById('largeVideoWarning');
+            
+            if (video.videoWidth && video.videoHeight && video.duration) {
+                const totalPixels = video.videoWidth * video.videoHeight;
+                const totalFrames = video.duration * video.fps || video.duration * 30; // Estimate if fps not available
+                
+                // Consider video large if:
+                // - Resolution > 1920x1080 (2MP)
+                // - Duration > 60 seconds
+                // - Total frames > 1800
+                const isLarge = totalPixels > 1920 * 1080 || video.duration > 60 || totalFrames > 1800;
+                
+                if (isLarge) {
+                    warning.classList.remove('hidden');
+                    
+                    // Auto-adjust settings for large videos
+                    const maxWorkers = document.getElementById('maxWorkers');
+                    const skipFrames = document.getElementById('skipFrames');
+                    const modelSizeButtons = document.querySelectorAll('.model-size-btn');
+                    
+                    // Reduce max workers if currently high
+                    if (parseInt(maxWorkers.value) > 4) {
+                        maxWorkers.value = 4;
+                        console.log('Auto-adjusted max workers to 4 for large video');
+                    }
+                    
+                    // Increase skip frames if currently low
+                    if (parseInt(skipFrames.value) < 15) {
+                        skipFrames.value = 15;
+                        console.log('Auto-adjusted skip frames to 15 for large video');
+                    }
+                    
+                    // Suggest smaller model size
+                    const currentModelSize = document.querySelector('.model-size-btn.selected');
+                    if (currentModelSize && ['l', 'x'].includes(currentModelSize.dataset.value)) {
+                        // Find nano or small button and suggest it
+                        const smallerButton = document.querySelector('.model-size-btn[data-value="n"]') || 
+                                            document.querySelector('.model-size-btn[data-value="s"]');
+                        if (smallerButton) {
+                            console.log(`Consider using ${smallerButton.textContent.trim()} model for better performance with large videos`);
+                        }
+                    }
+                } else {
+                    warning.classList.add('hidden');
+                }
+            }
+        }
 
         selectOutputDirButton.addEventListener('click', async () => {
             const dirPath = await window.electronAPI.selectDirectory();
@@ -1161,6 +1243,87 @@
             clearDebugOutput();
         });
 
+        // Add copy debug button event listener
+        document.getElementById('copyDebug').addEventListener('click', async () => {
+            const debugOutput = document.getElementById('debugOutput');
+            const textToCopy = debugOutput.textContent || debugOutput.innerText;
+            
+            if (!textToCopy.trim()) {
+                // Show a brief message that there's nothing to copy
+                const originalText = document.getElementById('copyDebug').innerHTML;
+                document.getElementById('copyDebug').innerHTML = `
+                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                    Empty
+                `;
+                setTimeout(() => {
+                    document.getElementById('copyDebug').innerHTML = originalText;
+                }, 1000);
+                return;
+            }
+            
+            try {
+                await navigator.clipboard.writeText(textToCopy);
+                
+                // Show success feedback
+                const originalText = document.getElementById('copyDebug').innerHTML;
+                document.getElementById('copyDebug').innerHTML = `
+                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                    Copied!
+                `;
+                
+                // Reset button after 1.5 seconds
+                setTimeout(() => {
+                    document.getElementById('copyDebug').innerHTML = originalText;
+                }, 1500);
+                
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+                
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = textToCopy;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    
+                    // Show success feedback
+                    const originalText = document.getElementById('copyDebug').innerHTML;
+                    document.getElementById('copyDebug').innerHTML = `
+                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                        Copied!
+                    `;
+                    
+                    setTimeout(() => {
+                        document.getElementById('copyDebug').innerHTML = originalText;
+                    }, 1500);
+                    
+                } catch (fallbackErr) {
+                    console.error('Fallback copy failed: ', fallbackErr);
+                    
+                    // Show error feedback
+                    const originalText = document.getElementById('copyDebug').innerHTML;
+                    document.getElementById('copyDebug').innerHTML = `
+                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                        </svg>
+                        Failed
+                    `;
+                    
+                    setTimeout(() => {
+                        document.getElementById('copyDebug').innerHTML = originalText;
+                    }, 1500);
+                }
+                document.body.removeChild(textArea);
+            }
+        });
+
         // Global variable to track current Python handlers
         let currentPythonHandlers = null;
         let isProcessing = false;
@@ -1168,9 +1331,13 @@
         // Function to clean up Python output handlers
         function cleanupPythonHandlers() {
             if (currentPythonHandlers) {
-                // Remove both output and complete handlers
-                window.electronAPI.removePythonOutputListener(currentPythonHandlers.pythonOutputHandler);
-                window.electronAPI.removePythonScriptCompleteListener(currentPythonHandlers.scriptCompleteHandler);
+                // Call the cleanup functions returned by the API
+                if (currentPythonHandlers.cleanupOutput) {
+                    currentPythonHandlers.cleanupOutput();
+                }
+                if (currentPythonHandlers.cleanupComplete) {
+                    currentPythonHandlers.cleanupComplete();
+                }
                 currentPythonHandlers = null;
             }
             isProcessing = false;
@@ -1181,82 +1348,85 @@
             // Clean up any existing handlers first
             cleanupPythonHandlers();
             
-            // Only set up new handlers if we're not already processing
-            if (!isProcessing) {
-                isProcessing = true;
+            // Set up new handlers
+            isProcessing = true;
+            
+            const pythonOutputHandler = (event, message) => {
+                if (isProcessing) {  // Only append output if we're still processing
+                    appendDebugOutput(message, 'info');
+                }
+            };
+            
+            const scriptCompleteHandler = (event, result) => {
+                // Clean up handlers immediately when script completes
+                cleanupPythonHandlers();
                 
-                const pythonOutputHandler = (event, message) => {
-                    if (isProcessing) {  // Only append output if we're still processing
-                        appendDebugOutput(message, 'info');
-                    }
-                };
-                
-                const scriptCompleteHandler = (event, result) => {
-                    // Clean up handlers immediately when script completes
-                    cleanupPythonHandlers();
+                if (result.success) {
+                    showStatus(`Video processing completed successfully!\nOutput saved to: ${result.outputPath}`, 'success');
+                    appendDebugOutput('Processing completed successfully!', 'success');
+                    appendDebugOutput(`Output saved to: ${result.outputPath}`, 'success');
                     
-                    if (result.success) {
-                        showStatus(`Video processing completed successfully!\nOutput saved to: ${result.outputPath}`, 'success');
-                        appendDebugOutput('Processing completed successfully!', 'success');
-                        appendDebugOutput(`Output saved to: ${result.outputPath}`, 'success');
-                        
-                        // If in single video mode, load the output video
-                        if (!isBatchProcessing) {
-                            loadOutputVideo(result.outputPath).then(() => {
-                                switchVideoTab('output');
-                            });
-                        } else {
-                            // Update batch queue item status
-                            const video = batchQueue[currentBatchIndex];
-                            if (video) {
-                                video.status = 'completed';
-                                video.progress = 100;
-                                updateQueueItemStatus(video.path, 'completed', 100);
-                                updateBatchProgress();
-                            }
-                        }
-                    } else {
-                        showStatus(`Error: ${result.error}`, 'error');
-                        appendDebugOutput(`Error: ${result.error}`, 'error');
-                        if (result.stack) {
-                            appendDebugOutput(result.stack, 'error');
-                        }
-                        
-                        // If in batch mode, update queue item status
-                        if (isBatchProcessing) {
-                            const video = batchQueue[currentBatchIndex];
-                            if (video) {
-                                video.status = 'failed';
-                                updateQueueItemStatus(video.path, 'failed', 0, result.error);
-                                updateBatchProgress();
-                            }
-                        }
-                    }
-
-                    // Reset UI state if in single video mode
+                    // If in single video mode, load the output video
                     if (!isBatchProcessing) {
-                        processButton.classList.remove('hidden');
-                        cancelButton.classList.add('hidden');
-                        processButton.disabled = false;
-                        selectFileButton.disabled = false;
-                        selectOutputDirButton.disabled = false;
-                        outputFilenameInput.disabled = false;
-                        currentProcess = null;
+                        loadOutputVideo(result.outputPath).then(() => {
+                            switchVideoTab('output');
+                        });
                     } else {
-                        // Process next video in batch if not paused
-                        if (isBatchProcessing) {
-                            processNextVideo();
+                        // Update batch queue item status
+                        const video = batchQueue[currentBatchIndex];
+                        if (video) {
+                            video.status = 'completed';
+                            video.progress = 100;
+                            updateQueueItemStatus(video.path, 'completed', 100);
+                            updateBatchProgress();
                         }
                     }
-                };
+                } else {
+                    showStatus(`Error: ${result.error}`, 'error');
+                    appendDebugOutput(`Error: ${result.error}`, 'error');
+                    if (result.stack) {
+                        appendDebugOutput(result.stack, 'error');
+                    }
+                    
+                    // If in batch mode, update queue item status
+                    if (isBatchProcessing) {
+                        const video = batchQueue[currentBatchIndex];
+                        if (video) {
+                            video.status = 'failed';
+                            updateQueueItemStatus(video.path, 'failed', 0, result.error);
+                            updateBatchProgress();
+                        }
+                    }
+                }
 
-                // Set up new handlers
-                window.electronAPI.onPythonOutput(pythonOutputHandler);
-                window.electronAPI.onPythonScriptComplete(scriptCompleteHandler);
-                
-                // Store current handlers
-                currentPythonHandlers = { pythonOutputHandler, scriptCompleteHandler };
-            }
+                // Reset UI state if in single video mode
+                if (!isBatchProcessing) {
+                    processButton.classList.remove('hidden');
+                    cancelButton.classList.add('hidden');
+                    processButton.disabled = false;
+                    selectFileButton.disabled = false;
+                    selectOutputDirButton.disabled = false;
+                    outputFilenameInput.disabled = false;
+                    currentProcess = null;
+                } else {
+                    // Process next video in batch if not paused
+                    if (isBatchProcessing) {
+                        processNextVideo();
+                    }
+                }
+            };
+
+            // Set up new handlers and store cleanup functions
+            const cleanupOutput = window.electronAPI.onPythonOutput(pythonOutputHandler);
+            const cleanupComplete = window.electronAPI.onPythonScriptComplete(scriptCompleteHandler);
+            
+            // Store current handlers and cleanup functions
+            currentPythonHandlers = { 
+                pythonOutputHandler, 
+                scriptCompleteHandler,
+                cleanupOutput,
+                cleanupComplete
+            };
         }
 
         // Add settings help text
