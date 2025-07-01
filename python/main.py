@@ -342,11 +342,19 @@ def main(args=None):
 
         # Generate output video with cropped frames
         print("Phase 5: Generating output video...")
+        print(f"DEBUG: BETA watermark enabled: True")
+        print(f"DEBUG: BETA text: BETA")
+        print(f"DEBUG: BETA position: center")
+        print(f"DEBUG: BETA opacity: 0.8")
         try:
             video_processor.generate_output_video(
                 output_path=args.output,
                 crop_windows=smoothed_windows,
-                fps=fps
+                fps=fps,
+                add_beta_watermark=True,
+                beta_text="BETA",
+                beta_position="center",
+                beta_opacity=0.8
             )
         except Exception as e:
             print(f"Error generating output video: {e}")
