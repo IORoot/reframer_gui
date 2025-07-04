@@ -1236,21 +1236,36 @@
         // Function to clean up Python output handlers
         function cleanupPythonHandlers() {
             if (currentPythonHandlers) {
-                // Remove both output and complete handlers
-                window.electronAPI.removePythonOutputListener(currentPythonHandlers.pythonOutputHandler);
-                window.electronAPI.removePythonScriptCompleteListener(currentPythonHandlers.scriptCompleteHandler);
+                try {
+                    // Remove both output and complete handlers
+                    window.electronAPI.removePythonOutputListener(currentPythonHandlers.pythonOutputHandler);
+                    window.electronAPI.removePythonScriptCompleteListener(currentPythonHandlers.scriptCompleteHandler);
+                } catch (error) {
+                    console.log('Error removing listeners:', error);
+                }
                 currentPythonHandlers = null;
             }
+            
+            // Also remove all listeners as a safety measure
+            try {
+                window.electronAPI.removeAllPythonListeners();
+            } catch (error) {
+                console.log('Error removing all listeners:', error);
+            }
+            
             isProcessing = false;
         }
 
-        // Function to set up Python output handlers
+                // Function to set up Python output handlers
         function setupPythonHandlers() {
             // Clean up any existing handlers first
             cleanupPythonHandlers();
             
+            // Clear debug output to prevent confusion
+            clearDebugOutput();
+            
             // Only set up new handlers if we're not already processing
-            if (!isProcessing) {
+            if (!isProcessing && !currentPythonHandlers) {
                 isProcessing = true;
                 
                 const pythonOutputHandler = (event, message) => {

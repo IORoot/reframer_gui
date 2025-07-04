@@ -15,8 +15,28 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('python-script-complete', callback);
     return () => ipcRenderer.removeListener('python-script-complete', callback);
   },
-  removePythonOutputListener: (callback) => ipcRenderer.removeListener('python-output', callback),
-  removePythonScriptCompleteListener: (callback) => ipcRenderer.removeListener('python-script-complete', callback),
+  removePythonOutputListener: (callback) => {
+    try {
+      ipcRenderer.removeListener('python-output', callback);
+    } catch (error) {
+      console.log('Error removing python-output listener:', error);
+    }
+  },
+  removePythonScriptCompleteListener: (callback) => {
+    try {
+      ipcRenderer.removeListener('python-script-complete', callback);
+    } catch (error) {
+      console.log('Error removing python-script-complete listener:', error);
+    }
+  },
+  removeAllPythonListeners: () => {
+    try {
+      ipcRenderer.removeAllListeners('python-output');
+      ipcRenderer.removeAllListeners('python-script-complete');
+    } catch (error) {
+      console.log('Error removing all python listeners:', error);
+    }
+  },
   onShowDebugPanel: (callback) => {
     ipcRenderer.on('show-debug-panel', callback);
   },
