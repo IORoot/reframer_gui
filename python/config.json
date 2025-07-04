@@ -1,0 +1,12 @@
+{
+  "watermark": {
+    "enabled": true,
+    "text": "BETA",
+    "position": "center",
+    "opacity": 0.3,
+    "font_scale": 2.0,
+    "thickness": 2,
+    "color": [255, 255, 255],
+    "margin": 20
+  }
+} 

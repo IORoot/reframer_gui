@@ -10,10 +10,12 @@ from pathlib import Path
 try:
     # Try direct import first (when in same directory)
     from ffmpeg_manager import get_ffmpeg_path
+    from watermark import watermark_renderer
 except ImportError:
     # Fallback to python directory import (when bundled)
     sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
     from python.ffmpeg_manager import get_ffmpeg_path
+    from python.watermark import watermark_renderer
 
 def get_app_path():
     """Get the path to the application's resources directory."""
@@ -215,9 +217,12 @@ class VideoProcessor:
                 # Ensure cropped frame has the expected dimensions
                 if cropped_frame.shape[1] != crop_width or cropped_frame.shape[0] != crop_height:
                     cropped_frame = cv2.resize(cropped_frame, (crop_width, crop_height))
+                
+                # Apply watermark to the cropped frame
+                watermarked_frame = watermark_renderer.apply_watermark(cropped_frame)
                     
                 # Write to output video
-                self.writer.write(cropped_frame)
+                self.writer.write(watermarked_frame)
             except Exception as e:
                 print(f"Error processing frame {i}: {e}")
                 continue
