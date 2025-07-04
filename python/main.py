@@ -9,6 +9,7 @@ from object_detector import ObjectDetector
 from object_tracker import ObjectTracker
 from crop_calculator import CropCalculator
 from smoothing import CropWindowSmoother
+from config import config
 
 
 
@@ -56,6 +57,12 @@ def parse_args():
     # debugging
     parser.add_argument('--debug', action='store_true', default=False, help='Enable debuging mode for CLI. See debug_logs folder.')
 
+    # Watermark args
+    parser.add_argument('--watermark_enabled', action='store_true', default=None, help='Enable watermark overlay on output video')
+    parser.add_argument('--watermark_text', type=str, default=None, help='Watermark text to display')
+    parser.add_argument('--watermark_position', type=str, default=None, choices=['top-left', 'top-right', 'bottom-left', 'bottom-right', 'center'], help='Watermark position')
+    parser.add_argument('--watermark_opacity', type=float, default=None, help='Watermark opacity (0.0 to 1.0)')
+
 
     return parser.parse_args()
 
@@ -92,6 +99,20 @@ def main(args=None):
     print(f"DEBUG: Debug mode enabled: {args.debug}")
     print(f"DEBUG: Current working directory: {os.getcwd()}")
     print(f"DEBUG: All arguments: {vars(args)}")
+    
+    # Configure watermark settings from command line arguments (if provided)
+    if args.watermark_enabled is not None:
+        config.set_watermark_enabled(args.watermark_enabled)
+    if args.watermark_text is not None:
+        config.set_watermark_text(args.watermark_text)
+    if args.watermark_position is not None:
+        config.set_watermark_position(args.watermark_position)
+    if args.watermark_opacity is not None:
+        config.set_watermark_opacity(args.watermark_opacity)
+    
+    # Print watermark configuration
+    watermark_config = config.get_watermark_config()
+    print(f"Watermark configuration: {watermark_config}")
     
     # Initialize components with YOLOv8
     video_processor = VideoProcessor()

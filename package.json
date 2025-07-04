@@ -62,7 +62,7 @@
       {
         "from": "python",
         "to": "python",
-        "filter": ["**/*.py", "!**/*.mp4"]
+        "filter": ["**/*.py", "**/*.json", "!**/*.mp4"]
       },
       {
         "from": "requirements.txt",
