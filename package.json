@@ -16,6 +16,9 @@
     "build:css": "tailwindcss -i ./src/styles.css -o ./styles.css --minify",
     "build:electron": "electron-builder build --mac",
     "build:mac": "npm run clean && npm run build:css && electron-builder build --mac",
+    "build:mac-dev": "npm run clean && npm run build:css && electron-builder build --mac --config.mac.identity='Self Signed Certificate'",
+    "build:mac-prod": "npm run clean && npm run build:css && electron-builder build --mac --config.mac.identity='Developer ID Application: Your Name (TEAM_ID)'",
+    "build:mac-no-quarantine": "npm run build:mac && xattr -rd com.apple.quarantine dist/mac-arm64/Reframe.app",
     "build:win": "npm run clean && npm run build:css && electron-builder build --win",
     "build:linux": "npm run clean && npm run build:css && electron-builder build --linux",
     "postinstall": "electron-builder install-app-deps",
@@ -74,9 +77,9 @@
       "target": ["dmg"],
       "icon": "build/icon.icns",
       "hardenedRuntime": true,
-      "gatekeeperAssess": false,
       "entitlements": "build/entitlements.mac.plist",
-      "entitlementsInherit": "build/entitlements.mac.plist"
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "identity": null
     },
     "win": {
       "target": ["nsis"],
