@@ -181,6 +181,8 @@ class VideoProcessor:
         except Exception as e:
             return False, f"Frame validation error: {e}"
 
+
+
     def convert_to_h264(self, input_path):
         """Convert the given video to H.264 format using FFmpeg."""
         try:
@@ -242,7 +244,91 @@ class VideoProcessor:
             # Don't fail the entire process if audio merging fails
             pass
     
-    def generate_output_video(self, output_path, crop_windows, fps=None):
+    def add_watermark(self, frame, text="BETA", position="bottom-right", opacity=0.7):
+        """
+        Add a watermark to a frame.
+        
+        Args:
+            frame: Input frame (numpy array)
+            text: Text to add as watermark
+            position: Position of watermark ('top-left', 'top-right', 'bottom-left', 'bottom-right', 'center')
+            opacity: Opacity of the watermark (0.0 to 1.0)
+            
+        Returns:
+            Frame with watermark added
+        """
+        try:
+            print(f"DEBUG: Adding watermark - text: '{text}', position: '{position}', opacity: {opacity}")
+            if frame is None:
+                print("DEBUG: Frame is None, cannot add watermark")
+                return None
+            
+            # Create a copy of the frame to avoid modifying the original
+            watermarked_frame = frame.copy()
+            
+            # Get frame dimensions
+            height, width = frame.shape[:2]
+            
+            # Set font properties - make watermark more prominent
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            font_scale = min(width, height) / 400.0  # Make font larger (was 800.0)
+            font_scale = max(1.0, min(4.0, font_scale))  # Clamp between 1.0 and 4.0 (was 0.5 and 2.0)
+            thickness = max(2, int(font_scale * 3))  # Make text thicker
+            
+            # Get text size
+            (text_width, text_height), baseline = cv2.getTextSize(text, font, font_scale, thickness)
+            print(f"DEBUG: Font scale: {font_scale}, thickness: {thickness}")
+            print(f"DEBUG: Text size: {text_width}x{text_height}, baseline: {baseline}")
+            
+            # Calculate position
+            if position == "top-left":
+                x = 20
+                y = text_height + 20
+            elif position == "top-right":
+                x = width - text_width - 20
+                y = text_height + 20
+            elif position == "bottom-left":
+                x = 20
+                y = height - baseline - 20
+            elif position == "bottom-right":
+                x = width - text_width - 20
+                y = height - baseline - 20
+            elif position == "center":
+                x = (width - text_width) // 2
+                y = (height + text_height) // 2
+            else:
+                # Default to bottom-right
+                x = width - text_width - 20
+                y = height - baseline - 20
+            
+            print(f"DEBUG: Frame size: {width}x{height}")
+            print(f"DEBUG: Watermark position: ({x}, {y})")
+            
+            # Create a background rectangle for better text visibility
+            padding = 10
+            rect_x1 = max(0, x - padding)
+            rect_y1 = max(0, y - text_height - padding)
+            rect_x2 = min(width, x + text_width + padding)
+            rect_y2 = min(height, y + baseline + padding)
+            
+            # Draw semi-transparent background rectangle - make it more opaque
+            overlay = watermarked_frame.copy()
+            cv2.rectangle(overlay, (rect_x1, rect_y1), (rect_x2, rect_y2), (0, 0, 0), -1)
+            # Use higher opacity for background (0.7) to make text more visible
+            watermarked_frame = cv2.addWeighted(overlay, 0.7, watermarked_frame, 0.3, 0)
+            
+            # Draw the text
+            cv2.putText(watermarked_frame, text, (x, y), font, font_scale, (255, 255, 255), thickness)
+            
+            return watermarked_frame
+            
+        except Exception as e:
+            print(f"Error adding watermark: {e}")
+            print(f"Traceback: {traceback.format_exc()}")
+            # Return original frame if watermarking fails
+            return frame
+
+    def generate_output_video(self, output_path, crop_windows, fps=None, add_beta_watermark=False, beta_text="BETA Version", beta_position="bottom-right", beta_opacity=0.1):
         """Generate output video with the specified crop windows."""
         try:
             if self.cap is None:
@@ -280,6 +366,8 @@ class VideoProcessor:
                 raise ValueError(f"Invalid crop dimensions: {crop_width}x{crop_height}")
             
             print(f"Creating video writer: {crop_width}x{crop_height} @ {fps}fps")
+            if add_beta_watermark:
+                print("BETA watermark will be added to output video")
             
             # Create video writer with mp4v codec
             fourcc = cv2.VideoWriter_fourcc(*'mp4v')
@@ -351,6 +439,19 @@ class VideoProcessor:
                             frames_skipped += 1
                             continue
                     
+                    # Add BETA watermark if enabled
+                    if add_beta_watermark:
+                        print(f"DEBUG: Adding watermark to frame {i}")
+                        cropped_frame = self.add_watermark(cropped_frame, beta_text, beta_position, beta_opacity)
+                        if cropped_frame is None:
+                            print(f"Warning: Failed to add watermark to frame {i}, using original frame")
+                            # If watermarking fails, use the original cropped frame
+                            cropped_frame = self.apply_crop(frame, crop_window)
+                        else:
+                            print(f"DEBUG: Watermark added successfully to frame {i}")
+                    else:
+                        print(f"DEBUG: Watermark disabled for frame {i}")
+                    
                     # Ensure frame is contiguous in memory
                     if not cropped_frame.flags['C_CONTIGUOUS']:
                         cropped_frame = np.ascontiguousarray(cropped_frame)
@@ -370,12 +471,15 @@ class VideoProcessor:
                     continue
                 
                 if i % 100 == 0:
-                    print(f"\r🎥 Processed {i}/{len(crop_windows)} frames (written: {frames_written}, skipped: {frames_skipped})", end='', flush=True)
+                    watermark_status = " (with BETA watermark)" if add_beta_watermark else ""
+                    print(f"\r🎥 Processed {i}/{len(crop_windows)} frames (written: {frames_written}, skipped: {frames_skipped}){watermark_status}", end='', flush=True)
                     # Force garbage collection periodically for large videos
                     if i % 1000 == 0:
                         gc.collect()
             
             print(f"\nVideo generation complete: {frames_written} frames written, {frames_skipped} frames skipped")
+            if add_beta_watermark:
+                print("BETA watermark applied to output video")
             
             # Release resources
             if self.writer:

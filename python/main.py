@@ -346,7 +346,8 @@ def main(args=None):
             video_processor.generate_output_video(
                 output_path=args.output,
                 crop_windows=smoothed_windows,
-                fps=fps
+                fps=fps,
+                add_beta_watermark=True
             )
         except Exception as e:
             print(f"Error generating output video: {e}")
