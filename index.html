@@ -2692,6 +2692,18 @@
             
             // Initial call to set up responsive grid
             setTimeout(updateGridResponsiveness, 100);
+            
+            // Trigger change events for settings that affect UI state after all listeners are set up
+            const debugWindowCheckbox = document.getElementById('debugWindow');
+            const showHelpCheckbox = document.getElementById('showHelp');
+            
+            if (debugWindowCheckbox && debugWindowCheckbox.checked) {
+                debugWindowCheckbox.dispatchEvent(new Event('change'));
+            }
+            
+            if (showHelpCheckbox && showHelpCheckbox.checked) {
+                showHelpCheckbox.dispatchEvent(new Event('change'));
+            }
         });
 
         // Function to set model size from saved value
