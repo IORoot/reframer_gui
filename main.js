@@ -365,6 +365,31 @@ async function checkSetup() {
 // Handle Python script execution
 ipcMain.handle('run-python-script', async (event, videoPath, options = {}) => {
     try {
+        // Clean up any existing process and listeners
+        if (currentProcess) {
+            console.log('Cleaning up previous process...');
+            // Remove all listeners from the previous process
+            currentProcess.stdout.removeAllListeners();
+            currentProcess.stderr.removeAllListeners();
+            currentProcess.removeAllListeners();
+            
+            // Kill the previous process if it's still running
+            try {
+                if (processGroupId) {
+                    if (process.platform === 'win32') {
+                        await execPromise(`taskkill /F /T /PID ${processGroupId}`);
+                    } else {
+                        process.kill(-processGroupId, 'SIGKILL');
+                    }
+                }
+            } catch (error) {
+                console.log('Previous process already terminated or failed to kill:', error.message);
+            }
+            
+            currentProcess = null;
+            processGroupId = null;
+        }
+
         const pythonPath = await checkSetup();
         if (!pythonPath) {
             throw new Error('Python environment not available');
@@ -456,7 +481,17 @@ ipcMain.handle('run-python-script', async (event, videoPath, options = {}) => {
         // Handle process completion
         currentProcess.on('close', (code) => {
             console.log('Process closed with code:', code);
+            
+            // Clean up listeners
+            if (currentProcess) {
+                currentProcess.stdout.removeAllListeners();
+                currentProcess.stderr.removeAllListeners();
+                currentProcess.removeAllListeners();
+            }
+            
             currentProcess = null;
+            processGroupId = null;
+            
             if (code === 0) {
                 event.sender.send('python-script-complete', { success: true, outputPath });
             } else {
@@ -470,7 +505,17 @@ ipcMain.handle('run-python-script', async (event, videoPath, options = {}) => {
 
         currentProcess.on('error', (err) => {
             console.error('Process error:', err);
+            
+            // Clean up listeners
+            if (currentProcess) {
+                currentProcess.stdout.removeAllListeners();
+                currentProcess.stderr.removeAllListeners();
+                currentProcess.removeAllListeners();
+            }
+            
             currentProcess = null;
+            processGroupId = null;
+            
             event.sender.send('python-script-complete', { 
                 success: false, 
                 error: err.message || err.toString(),
@@ -534,12 +579,25 @@ ipcMain.handle('cancel-processing', async () => {
         }
 
         console.log('Process kill command sent');
+        
+        // Clean up listeners
+        if (currentProcess) {
+            currentProcess.stdout.removeAllListeners();
+            currentProcess.stderr.removeAllListeners();
+            currentProcess.removeAllListeners();
+        }
+        
         currentProcess = null;
         processGroupId = null;
         return { success: true };
     } catch (error) {
         console.error('Error during cancellation:', error);
         // Even if we get an error, try to clean up
+        if (currentProcess) {
+            currentProcess.stdout.removeAllListeners();
+            currentProcess.stderr.removeAllListeners();
+            currentProcess.removeAllListeners();
+        }
         currentProcess = null;
         processGroupId = null;
         return { 
