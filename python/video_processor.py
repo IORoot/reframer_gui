@@ -328,7 +328,7 @@ class VideoProcessor:
             # Return original frame if watermarking fails
             return frame
 
-    def generate_output_video(self, output_path, crop_windows, fps=None, add_beta_watermark=False, beta_text="BETA", beta_position="bottom-right", beta_opacity=0.7):
+    def generate_output_video(self, output_path, crop_windows, fps=None, add_beta_watermark=False, beta_text="BETA v0.0.2", beta_position="bottom-right", beta_opacity=0.7):
         """Generate output video with the specified crop windows."""
         try:
             if self.cap is None:
