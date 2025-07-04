@@ -183,6 +183,33 @@ select {
     }
 } 
 
+/* Zoom functionality styles */
+body {
+    /* Ensure smooth zoom transitions */
+    transition: transform 0.1s ease-out;
+}
 
+/* Ensure form elements scale properly with zoom */
+input, select, textarea, button {
+    /* Prevent text from becoming too small when zooming out */
+    min-height: 1.2em;
+}
 
+/* Ensure the main container scales properly */
+#app {
+    /* Maintain layout integrity during zoom */
+    min-width: 100%;
+    min-height: 100vh;
+}
 
+/* Ensure video elements scale properly */
+video {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Ensure the debug panel remains readable */
+.debug-panel {
+    /* Prevent text from becoming too small */
+    min-font-size: 12px;
+}

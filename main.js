@@ -55,6 +55,30 @@ function createWindow() {
       label: 'View',
       submenu: [
         {
+          label: 'Zoom In',
+          accelerator: process.platform === 'darwin' ? 'Cmd+Plus' : 'Ctrl+Plus',
+          click: () => {
+            const currentZoom = mainWindow.webContents.getZoomLevel();
+            mainWindow.webContents.setZoomLevel(currentZoom + 1);
+          }
+        },
+        {
+          label: 'Zoom Out',
+          accelerator: process.platform === 'darwin' ? 'Cmd+-' : 'Ctrl+-',
+          click: () => {
+            const currentZoom = mainWindow.webContents.getZoomLevel();
+            mainWindow.webContents.setZoomLevel(currentZoom - 1);
+          }
+        },
+        {
+          label: 'Actual Size',
+          accelerator: process.platform === 'darwin' ? 'Cmd+0' : 'Ctrl+0',
+          click: () => {
+            mainWindow.webContents.setZoomLevel(0);
+          }
+        },
+        { type: 'separator' },
+        {
           label: 'Toggle Developer Tools',
           accelerator: process.platform === 'darwin' ? 'Cmd+Option+I' : 'Ctrl+Shift+I',
           click: () => {
@@ -88,6 +112,24 @@ function createWindow() {
 
   mainWindow.loadFile('index.html');
   // DevTools will not open automatically
+
+  // Handle zoom shortcuts
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    if (input.control || input.meta) {
+      if (input.key === '=' || input.key === '+') {
+        event.preventDefault();
+        const currentZoom = mainWindow.webContents.getZoomLevel();
+        mainWindow.webContents.setZoomLevel(currentZoom + 1);
+      } else if (input.key === '-') {
+        event.preventDefault();
+        const currentZoom = mainWindow.webContents.getZoomLevel();
+        mainWindow.webContents.setZoomLevel(currentZoom - 1);
+      } else if (input.key === '0') {
+        event.preventDefault();
+        mainWindow.webContents.setZoomLevel(0);
+      }
+    }
+  });
 }
 
 app.whenReady().then(createWindow);
