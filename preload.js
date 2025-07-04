@@ -19,5 +19,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   removePythonScriptCompleteListener: (callback) => ipcRenderer.removeListener('python-script-complete', callback),
   onShowDebugPanel: (callback) => {
     ipcRenderer.on('show-debug-panel', callback);
+  },
+  onCopyDebugOutput: (callback) => {
+    ipcRenderer.on('copy-debug-output', callback);
   }
 }); 

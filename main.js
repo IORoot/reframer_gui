@@ -84,6 +84,14 @@ function createWindow() {
           click: () => {
             mainWindow.webContents.toggleDevTools();
           }
+        },
+        { type: 'separator' },
+        {
+          label: 'Copy Debug Output',
+          accelerator: process.platform === 'darwin' ? 'Cmd+Shift+C' : 'Ctrl+Shift+C',
+          click: () => {
+            mainWindow.webContents.send('copy-debug-output');
+          }
         }
       ]
     }

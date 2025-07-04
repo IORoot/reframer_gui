@@ -919,6 +919,7 @@
                 <div class="flex justify-between items-center p-2.5 bg-[#2d2d2d] border-b border-gray-200">
                     <h3 class="m-0 text-white text-base">Python Output</h3>
                     <div class="flex items-center gap-2">
+                        <button id="copyDebug" class="px-2 py-1 bg-[#444] text-white border-none rounded cursor-pointer text-sm hover:bg-[#555]" title="Copy all debug output to clipboard">Copy</button>
                         <button id="toggleDebug" class="px-2 py-1 bg-[#444] text-white border-none rounded cursor-pointer text-sm hover:bg-[#555]">Collapse</button>
                         <button id="clearDebug" class="px-2 py-1 bg-[#444] text-white border-none rounded cursor-pointer text-sm hover:bg-[#555]">Clear</button>
                     </div>
@@ -1159,6 +1160,73 @@
         // Add clear debug button event listener
         document.getElementById('clearDebug').addEventListener('click', () => {
             clearDebugOutput();
+        });
+
+        // Add copy debug button event listener
+        document.getElementById('copyDebug').addEventListener('click', async () => {
+            copyDebugOutput();
+        });
+
+        // Function to copy debug output to clipboard
+        async function copyDebugOutput() {
+            const debugOutput = document.getElementById('debugOutput');
+            const textToCopy = debugOutput.textContent || debugOutput.innerText;
+            
+            try {
+                await navigator.clipboard.writeText(textToCopy);
+                
+                // Show temporary success feedback
+                const copyButton = document.getElementById('copyDebug');
+                const originalText = copyButton.textContent;
+                copyButton.textContent = 'Copied!';
+                copyButton.style.backgroundColor = '#22c55e'; // green-500
+                
+                setTimeout(() => {
+                    copyButton.textContent = originalText;
+                    copyButton.style.backgroundColor = '#444';
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy debug output:', err);
+                
+                // Fallback for older browsers or when clipboard API is not available
+                const textArea = document.createElement('textarea');
+                textArea.value = textToCopy;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    
+                    // Show temporary success feedback
+                    const copyButton = document.getElementById('copyDebug');
+                    const originalText = copyButton.textContent;
+                    copyButton.textContent = 'Copied!';
+                    copyButton.style.backgroundColor = '#22c55e'; // green-500
+                    
+                    setTimeout(() => {
+                        copyButton.textContent = originalText;
+                        copyButton.style.backgroundColor = '#444';
+                    }, 2000);
+                } catch (fallbackErr) {
+                    console.error('Fallback copy failed:', fallbackErr);
+                    
+                    // Show error feedback
+                    const copyButton = document.getElementById('copyDebug');
+                    const originalText = copyButton.textContent;
+                    copyButton.textContent = 'Failed!';
+                    copyButton.style.backgroundColor = '#ef4444'; // red-500
+                    
+                    setTimeout(() => {
+                        copyButton.textContent = originalText;
+                        copyButton.style.backgroundColor = '#444';
+                    }, 2000);
+                }
+                document.body.removeChild(textArea);
+            }
+        }
+
+        // Add menu copy debug output event listener
+        window.electronAPI.onCopyDebugOutput(() => {
+            copyDebugOutput();
         });
 
         // Global variable to track current Python handlers
