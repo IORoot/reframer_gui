@@ -1,7 +1,0 @@
-opencv-python
-numpy
-scipy
-matplotlib
-ultralytics
-torch
-opencv-contrib-python
