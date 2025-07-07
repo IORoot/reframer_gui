@@ -15,7 +15,7 @@
     "build": "npm run clean && npm-run-all build:*",
     "build:css": "tailwindcss -i ./src/styles.css -o ./styles.css --minify",
     "build:electron": "electron-builder build --mac",
-    "build:mac": "npm run clean && npm run build:css && electron-builder build --mac",
+    "build:mac": "bash scripts/build_simple.sh",
     "build:win": "npm run clean && npm run build:css && electron-builder build --win",
     "build:linux": "npm run clean && npm run build:css && electron-builder build --linux",
     "postinstall": "electron-builder install-app-deps",
@@ -78,6 +78,24 @@
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist"
     },
+    "dmg": {
+      "contents": [
+        {
+          "x": 130,
+          "y": 120
+        },
+        {
+          "x": 410,
+          "y": 120,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "window": {
+        "width": 540,
+        "height": 400
+      }
+    },
     "win": {
       "target": ["nsis"],
       "icon": "build/icon.ico"
@@ -97,7 +115,7 @@
   "devDependencies": {
     "@playwright/test": "^1.42.1",
     "electron": "^28.0.0",
-    "electron-builder": "^24.13.3",
+    "electron-builder": "^23.6.0",
     "autoprefixer": "^10.4.17",
     "npm-run-all": "^4.1.5",
     "postcss": "^8.4.35",
