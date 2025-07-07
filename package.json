@@ -15,7 +15,7 @@
     "build": "npm run clean && npm-run-all build:*",
     "build:css": "tailwindcss -i ./src/styles.css -o ./styles.css --minify",
     "build:electron": "electron-builder build --mac",
-    "build:mac": "bash scripts/build_simple.sh",
+    "build:mac": "npm run clean && npm run build:css && CSC_IDENTITY_AUTO_DISCOVERY=true electron-builder build --mac && node build/notarize.js",
     "build:win": "npm run clean && npm run build:css && electron-builder build --win",
     "build:linux": "npm run clean && npm run build:css && electron-builder build --linux",
     "postinstall": "electron-builder install-app-deps",
@@ -79,14 +79,15 @@
       "entitlementsInherit": "build/entitlements.mac.plist"
     },
     "dmg": {
+      "icon": "build/icon.icns",
       "contents": [
         {
           "x": 130,
-          "y": 120
+          "y": 200
         },
         {
           "x": 410,
-          "y": 120,
+          "y": 200,
           "type": "link",
           "path": "/Applications"
         }
