@@ -91,3 +91,7 @@ htmlcov/
 .Trashes
 .VolumeIcon.icns
 .com.apple.timemachine.donotpresent
+
+.cursor
+.cursorrules
+*.mdc
