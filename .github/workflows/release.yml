@@ -33,8 +33,8 @@ jobs:
           # Prevent Electron Builder from trying to publish to GitHub
           GH_TOKEN: ""
           GITHUB_TOKEN: ""
-          # Disable CI detection for publishing
-          CI: false
+          # Disable auto-publishing
+          ELECTRON_BUILDER_ALLOW_UNRESOLVED_DEPENDENCIES: true
         run: npm run build:mac
 
       - name: Upload build artifacts

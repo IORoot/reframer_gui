@@ -31,6 +31,9 @@ async function notarize() {
 
     // Submit for notarization using notarytool
     console.log('Submitting to Apple for notarization...');
+    console.log('Using Apple ID:', process.env.APPLE_ID);
+    console.log('Using Team ID: 43DRWGP9KX');
+    
     const notarizeCommand = [
       'xcrun', 'notarytool', 'submit',
       '--apple-id', process.env.APPLE_ID,
@@ -39,7 +42,9 @@ async function notarize() {
       tempZip
     ].join(' ');
 
-    const result = execSync(notarizeCommand, { encoding: 'utf8' });
+    console.log('Running command:', notarizeCommand.replace(process.env.APPLE_APP_SPECIFIC_PASSWORD, '***'));
+    
+    const result = execSync(notarizeCommand, { encoding: 'utf8', stdio: 'pipe' });
     
     // Extract the submission ID from the result
     const idMatch = result.match(/id: ([a-f0-9-]+)/);
@@ -64,13 +69,15 @@ async function notarize() {
         submissionId
       ].join(' ');
 
-      const statusResult = execSync(statusCommand, { encoding: 'utf8' });
+      const statusResult = execSync(statusCommand, { encoding: 'utf8', stdio: 'pipe' });
       
       if (statusResult.includes('status: Accepted')) {
         console.log('Notarization completed successfully!');
         break;
       } else if (statusResult.includes('status: Invalid')) {
-        throw new Error('Notarization failed');
+        console.error('Notarization failed - status: Invalid');
+        console.error('Full status response:', statusResult);
+        throw new Error('Notarization failed with Invalid status');
       } else if (statusResult.includes('status: In Progress')) {
         console.log('Still in progress...');
       } else {
@@ -92,6 +99,17 @@ async function notarize() {
     console.log('- Users can run it without security warnings');
   } catch (error) {
     console.error('Notarization failed:', error.message);
+    console.error('Error details:', error);
+    
+    // If it's a subprocess error, show the command output
+    if (error.stdout) {
+      console.error('Command stdout:', error.stdout);
+    }
+    if (error.stderr) {
+      console.error('Command stderr:', error.stderr);
+    }
+    
+    // Exit with error code so the build fails and you can see the issue
     process.exit(1);
   }
 }
