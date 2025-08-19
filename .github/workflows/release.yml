@@ -66,8 +66,6 @@ jobs:
         run: |
           echo "Contents of current directory:"
           ls -la
-          echo "Contents of Reframe-mac directory:"
-          ls -la Reframe-mac/
           echo "Looking for build files:"
           find . -name "*.dmg" -o -name "*.app" -o -name "*.zip" | head -10
 
@@ -76,7 +74,10 @@ jobs:
         with:
           tag_name: v${{ github.event.inputs.version }}
           name: Release v${{ github.event.inputs.version }}
-          files: Reframe-mac/**/*
+          files: |
+            Reframe-1.0.0-arm64.dmg
+            Reframe-1.0.0-arm64.dmg.blockmap
+            mac-arm64/Reframe.app
           draft: false
           prerelease: false
           generate_release_notes: true
