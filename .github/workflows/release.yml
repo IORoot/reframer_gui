@@ -26,6 +26,10 @@ jobs:
         run: npm ci
 
       - name: Build application
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          CSC_IDENTITY_AUTO_DISCOVERY: true
         run: npm run build:mac
 
       - name: Upload build artifacts
