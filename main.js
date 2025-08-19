@@ -140,17 +140,19 @@ function createWindow() {
   });
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  createWindow();
+  
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow();
+    }
+  });
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
-  }
-});
-
-app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
   }
 });
 
@@ -222,6 +224,150 @@ ipcMain.handle('get-video-files-in-directory', async (event, dirPath, recursive 
   }
 });
 
+// Function to check if Xcode command line tools are installed
+async function checkXcodeTools() {
+    try {
+        // Check if xcode-select is available and working
+        const { stdout } = await execPromise('xcode-select -p');
+        const xcodePath = stdout.trim();
+        
+        // Check if the path exists and contains developer tools
+        if (xcodePath && fs.existsSync(xcodePath)) {
+            console.log('Xcode tools found at:', xcodePath);
+            return true;
+        }
+        
+        console.log('Xcode tools not found or invalid path:', xcodePath);
+        return false;
+    } catch (error) {
+        console.log('Xcode tools check failed:', error.message);
+        
+        // Check if this is the specific error about no developer tools
+        if (error.message.includes('No developer tools were found')) {
+            console.log('No developer tools found - needs installation');
+            return false;
+        }
+        
+        // Check if installation is already in progress
+        if (error.message.includes('requesting install')) {
+            console.log('Xcode tools installation already in progress');
+            return false;
+        }
+        
+        return false;
+    }
+}
+
+// Function to install Xcode command line tools
+async function installXcodeTools() {
+    return new Promise((resolve) => {
+        console.log('Starting Xcode tools installation...');
+        
+        // Use xcode-select --install which shows the system dialog
+        // Note: This command shows a system dialog that the user must interact with
+        const installProcess = spawn('xcode-select', ['--install'], {
+            stdio: 'pipe',
+            env: process.env
+        });
+
+        // Show user instructions
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('python-output', 
+                'A system dialog has appeared to install Xcode command line tools.\n' +
+                'Please follow the on-screen instructions to complete the installation.\n' +
+                'This may take several minutes and requires administrator privileges.\n\n' +
+                'Waiting for installation to complete...\n'
+            );
+        }
+
+        // Wait for user to complete installation
+        let installationComplete = false;
+        const checkInterval = setInterval(async () => {
+            const toolsAvailable = await checkXcodeTools();
+            if (toolsAvailable) {
+                clearInterval(checkInterval);
+                installationComplete = true;
+                if (mainWindow && !mainWindow.isDestroyed()) {
+                    mainWindow.webContents.send('python-output', 
+                        'Xcode tools installation detected as complete!\n'
+                    );
+                }
+                resolve(true);
+            }
+        }, 5000); // Check every 5 seconds
+
+        let installOutput = '';
+        installProcess.stdout.on('data', (data) => {
+            const message = data.toString();
+            installOutput += message;
+            console.log('Xcode install output:', message);
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.webContents.send('python-output', message);
+            }
+        });
+
+        installProcess.stderr.on('data', (data) => {
+            const message = data.toString();
+            installOutput += message;
+            console.log('Xcode install stderr:', message);
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.webContents.send('python-output', message);
+            }
+        });
+
+        installProcess.on('close', (code) => {
+            console.log('Xcode install process closed with code:', code);
+            
+            if (code === 0) {
+                console.log('Xcode tools installation completed');
+                resolve(true);
+            } else {
+                console.error('Xcode tools installation failed with code:', code);
+                console.error('Install output:', installOutput);
+                resolve(false);
+            }
+        });
+
+        installProcess.on('error', (err) => {
+            console.error('Xcode install process error:', err);
+            resolve(false);
+        });
+
+        // Set a timeout in case the process hangs
+        setTimeout(() => {
+            console.log('Xcode install timeout, checking if tools are available...');
+            clearInterval(checkInterval); // Stop the interval checking
+            
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.webContents.send('python-output', 
+                    'Installation timeout reached. Checking final status...\n'
+                );
+            }
+            
+            checkXcodeTools().then(available => {
+                if (available) {
+                    console.log('Xcode tools became available after timeout');
+                    if (mainWindow && !mainWindow.isDestroyed()) {
+                        mainWindow.webContents.send('python-output', 
+                            'Xcode tools installation completed successfully!\n'
+                        );
+                    }
+                    resolve(true);
+                } else {
+                    console.log('Xcode tools still not available after timeout');
+                    if (mainWindow && !mainWindow.isDestroyed()) {
+                        mainWindow.webContents.send('python-output', 
+                            'Xcode tools installation may still be in progress.\n' +
+                            'Please wait for the system installation to complete.\n'
+                        );
+                    }
+                    resolve(false);
+                }
+            });
+        }, 300000); // 5 minute timeout
+    });
+}
+
 // Function to check if setup is needed
 async function checkSetup() {
     if (isSettingUp) {
@@ -233,7 +379,7 @@ async function checkSetup() {
     const isDev = !app.isPackaged;
     const resourcesPath = isDev ? appPath : process.resourcesPath;
     const pythonPath = path.join(resourcesPath, 'python');
-    const venvPath = path.join(pythonPath, 'python', 'venv');
+            const venvPath = path.join(pythonPath, 'python', 'venv');
     const setupCompletePath = path.join(venvPath, '.setup_complete');
 
     console.log('Environment check:');
@@ -257,6 +403,73 @@ async function checkSetup() {
     isSettingUp = true;
 
     try {
+        // Check and install Xcode command line tools if needed (macOS only)
+        if (process.platform === 'darwin') {
+            const xcodeInstalled = await checkXcodeTools();
+            if (!xcodeInstalled) {
+                const xcodeResponse = await dialog.showMessageBox(mainWindow, {
+                    type: 'info',
+                    title: 'Xcode Command Line Tools Required',
+                    message: 'Reframe needs to install Xcode command line tools to run Python.',
+                    detail: 'This is a one-time setup required by macOS. The installation may take several minutes and requires administrator privileges.',
+                    buttons: ['Install Now', 'Cancel'],
+                    defaultId: 0
+                });
+
+                if (xcodeResponse.response === 1) { // Cancel
+                    console.log('Xcode tools installation cancelled by user');
+                    app.quit();
+                    return null;
+                }
+
+                // Show debug panel for Xcode installation progress
+                if (mainWindow && !mainWindow.isDestroyed()) {
+                    mainWindow.webContents.send('show-debug-panel');
+                    mainWindow.webContents.send('python-output', 'Installing Xcode command line tools...\n');
+                }
+
+                const xcodeSuccess = await installXcodeTools();
+                if (!xcodeSuccess) {
+                    const retryResponse = await dialog.showMessageBox(mainWindow, {
+                        type: 'error',
+                        title: 'Xcode Installation Failed',
+                        message: 'Failed to install Xcode command line tools.',
+                        detail: 'The installation may still be in progress or may have failed. You can:\n\n' +
+                                '1. Wait a few more minutes for the system installation to complete\n' +
+                                '2. Try again by restarting the application\n' +
+                                '3. Install manually by running "xcode-select --install" in Terminal\n\n' +
+                                'Would you like to try again?',
+                        buttons: ['Try Again', 'Quit'],
+                        defaultId: 0
+                    });
+
+                    if (retryResponse.response === 0) { // Try Again
+                        // Check if tools are now available
+                        const toolsAvailable = await checkXcodeTools();
+                        if (toolsAvailable) {
+                            mainWindow.webContents.send('python-output', 'Xcode tools are now available!\n');
+                        } else {
+                            dialog.showErrorBox(
+                                'Xcode Tools Still Not Available',
+                                'Xcode command line tools are still not available. Please install them manually:\n\n' +
+                                '1. Open Terminal\n' +
+                                '2. Run: xcode-select --install\n' +
+                                '3. Follow the on-screen instructions\n' +
+                                '4. Restart this application'
+                            );
+                            app.quit();
+                            return null;
+                        }
+                    } else {
+                        app.quit();
+                        return null;
+                    }
+                }
+
+                mainWindow.webContents.send('python-output', 'Xcode command line tools installed successfully!\n');
+            }
+        }
+
         // Show setup dialog
         const { response } = await dialog.showMessageBox(mainWindow, {
             type: 'info',

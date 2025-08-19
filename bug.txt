@@ -1,0 +1,7 @@
+Uncaught Exception:
+Error: The 'screen' module can't be used before the app 'ready' event
+at createScreenIfNeeded (node:electron/js2c/browser_init:2:50792)
+at Object.get (node:electron/js2c/browser_init:2:50834)
+at createWindow (/Applications/Reframe.app/Contents/Resources/app.asar/main.js:20:33)
+at App.<anonymous> (/Applications/Reframe.app/Contents/Resources/app.asar/main.js:153:5)
+at App.emit (node:events:517:28)

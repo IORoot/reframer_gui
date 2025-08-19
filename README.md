@@ -22,6 +22,14 @@ There are many settings, but the main ones are:
 
 > This runs linux/macos shell scripts - but it easily can be run in windows if needed. Just read the `run.sh` file and run commands by hand.
 
+### macOS Compatibility
+The bundled FFmpeg binary is a universal binary that supports both ARM64 (Apple Silicon) and x86_64 (Intel) architectures. This eliminates the need for Rosetta on modern Macs. If you need to rebuild the universal binary, use:
+```bash
+./scripts/build_universal_ffmpeg.sh
+```
+
+**Automatic Xcode Tools Installation**: On first run, the app automatically detects if Xcode command line tools are missing and guides users through the installation process. This eliminates the common "No developer tools were found" error on fresh macOS installs.
+
 ---
 
 ## Installation

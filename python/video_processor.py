@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
 import os
-import subprocess
 import sys
 import platform
 from pathlib import Path
@@ -9,12 +8,10 @@ from pathlib import Path
 # Use absolute imports that work in both development and bundled environments
 try:
     # Try direct import first (when in same directory)
-    from ffmpeg_manager import get_ffmpeg_path
     from watermark import watermark_renderer
 except ImportError:
     # Fallback to python directory import (when bundled)
     sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-    from python.ffmpeg_manager import get_ffmpeg_path
     from python.watermark import watermark_renderer
 
 def get_app_path():
@@ -58,8 +55,7 @@ class VideoProcessor:
         self.frames = None
         self.current_frame_idx = 0
         self.video_info = {}
-        self.ffmpeg_path = get_ffmpeg_path()
-        print(f"VideoProcessor initialized with ffmpeg path: {self.ffmpeg_path}")
+        print("VideoProcessor initialized with OpenCV for detection and MoviePy for video processing")
     
     def load_video(self, video_path):
         """Load video file and extract basic information."""
@@ -109,60 +105,50 @@ class VideoProcessor:
         return frame[y:y+h, x:x+w]
     
     def convert_to_h264(self, input_path):
-        """Convert the given video to H.264 format using FFmpeg."""
-
-        temp_h264_output = "temp_h264_output.mp4"
-
-        ffmpeg_command = [
-            self.ffmpeg_path, "-y", "-i", input_path,
-            "-c:v", "libx264", "-preset", "ultrafast", "-crf", "28",
-            "-c:a", "aac", "-b:a", "128k",
-            temp_h264_output
-        ]
+        """Convert the given video to H.264 format using MoviePy (preserves audio)."""
+        temp_output = "temp_h264_output.mp4"
         
-        print(f"Encoding video to H.264: {temp_h264_output}")
-        subprocess.run(ffmpeg_command, check=True)
+        try:
+            print(f"Converting video to H.264 with MoviePy: {temp_output}")
+            
+            # Import MoviePy here to ensure it's available
+            try:
+                from moviepy import VideoFileClip
+            except ImportError:
+                # Fallback to editor import
+                from moviepy.editor import VideoFileClip
+            
+            # Load the video (this preserves audio)
+            video = VideoFileClip(input_path)
+            
+            # Write with H.264 codec (preserves audio)
+            print("Writing H.264 video with audio...")
+            video.write_videofile(
+                temp_output,
+                codec='libx264',
+                audio_codec='aac'
+            )
+            
+            # Clean up
+            video.close()
+            
+            # Overwrite original video with the new one
+            os.replace(temp_output, input_path)
+            print(f"H.264 conversion completed with audio preserved")
+            
+        except Exception as e:
+            # Cleanup on error
+            if os.path.exists(temp_output):
+                os.remove(temp_output)
+            raise RuntimeError(f"H.264 conversion failed: {e}")
 
-        # Overwrite original video with the new one
-        os.replace(temp_h264_output, input_path)
 
-
-    def merge_audio(self, video_path, original_video):
-        """Merge original audio into the processed video using FFmpeg."""
-        audio_path = "temp_audio.mp3"
-        temp_output = "temp_output.mp4"  # Temporary output file
-
-        # Extract audio from the original video
-        extract_cmd = [
-            self.ffmpeg_path, "-i", original_video, "-q:a", "0", "-map", "0:a?", audio_path, "-y"
-        ]
-        result = subprocess.run(extract_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-        if not os.path.exists(audio_path):
-            print("Error extracting audio:", result.stderr.decode())
-            return  # Exit if audio extraction fails
-
-        # Merge extracted audio into a temporary file
-        merge_cmd = [
-            self.ffmpeg_path, "-i", video_path, "-i", audio_path, 
-            "-c:v", "copy", "-c:a", "aac", "-strict", "experimental", temp_output, "-y"
-        ]
-        result = subprocess.run(merge_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-        if result.returncode != 0:
-            print("Error merging audio:", result.stderr.decode())
-            return  # Exit if merging fails
-
-        # Overwrite original video with the new one
-        os.replace(temp_output, video_path)
-
-        # Cleanup
-        os.remove(audio_path)
+    # merge_audio method removed - no longer needed with MoviePy approach
 
     
     
     def generate_output_video(self, output_path, crop_windows, fps=None):
-        """Generate output video with the specified crop windows."""
+        """Generate output video with the specified crop windows using MoviePy."""
         if self.cap is None:
             raise ValueError("No video loaded. Call load_video() first.")
         
@@ -174,70 +160,118 @@ class VideoProcessor:
         if output_dir and not os.path.exists(output_dir):
             os.makedirs(output_dir)
         
-        # Reset video to beginning
-        self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-        
-        # Get first crop window to determine output dimensions
-        first_crop = crop_windows[0]
-        crop_width, crop_height = first_crop[2], first_crop[3]
-        
-        # Create video writer with mp4v codec
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        self.writer = cv2.VideoWriter(
-            output_path, 
-            fourcc, 
-            fps, 
-            (crop_width, crop_height)
-        )
-        
-        # Check if writer was successfully created
-        if not self.writer.isOpened():
-            print(f"Error: Could not create video writer for {output_path}")
-            print(f"Trying alternative codec...")
-            # Try with a different codec
-            self.writer = cv2.VideoWriter(
-                output_path, 
-                cv2.VideoWriter_fourcc(*'XVID'), 
-                fps, 
-                (crop_width, crop_height)
-            )
-            if not self.writer.isOpened():
-                raise ValueError(f"Failed to create video writer with multiple codecs")
-        
-        # Process each frame
-        for i, frame in enumerate(self.frame_generator()):
-            if i >= len(crop_windows):
-                break
+        try:
+            # Import MoviePy
+            from moviepy import VideoFileClip
+            print("Using MoviePy for video processing...")
             
-            # Apply crop with boundary checking
-            crop_window = crop_windows[i]
-            try:
-                cropped_frame = self.apply_crop(frame, crop_window)
+            # Load original video with MoviePy (preserves audio)
+            original_video = VideoFileClip(self.video_info['path'])
+            print(f"Loaded original video: {original_video.duration:.2f}s, {original_video.fps} fps")
+            
+            # Get first crop window to determine output dimensions
+            first_crop = crop_windows[0]
+            crop_width, crop_height = first_crop[2], first_crop[3]
+            print(f"Output dimensions: {crop_width}x{crop_height}")
+            
+            # Process frames one by one and create a new video clip
+            print("Processing video frames with MoviePy...")
+            
+            # Create a list to store processed frames
+            processed_frames = []
+            
+            # Process each frame using OpenCV for cropping, then convert to MoviePy
+            for i in range(len(crop_windows)):
+                # Get frame from OpenCV (we already have this capability)
+                self.cap.set(cv2.CAP_PROP_POS_FRAMES, i)
+                ret, frame = self.cap.read()
+                if not ret:
+                    break
                 
-                # Ensure cropped frame has the expected dimensions
+                # Apply crop window
+                crop_window = crop_windows[i]
+                x, y, w, h = crop_window
+                
+                # Ensure crop coordinates are within bounds
+                x = max(0, min(x, frame.shape[1] - w))
+                y = max(0, min(y, frame.shape[0] - h))
+                w = min(w, frame.shape[1] - x)
+                h = min(h, frame.shape[0] - y)
+                
+                # Crop the frame
+                cropped_frame = frame[y:y+h, x:x+w]
+                
+                # Resize if needed
                 if cropped_frame.shape[1] != crop_width or cropped_frame.shape[0] != crop_height:
                     cropped_frame = cv2.resize(cropped_frame, (crop_width, crop_height))
                 
-                # Apply watermark to the cropped frame
+                # Apply watermark
                 watermarked_frame = watermark_renderer.apply_watermark(cropped_frame)
-                    
-                # Write to output video
-                self.writer.write(watermarked_frame)
-            except Exception as e:
-                print(f"Error processing frame {i}: {e}")
-                continue
+                
+                # Convert BGR to RGB for MoviePy
+                rgb_frame = cv2.cvtColor(watermarked_frame, cv2.COLOR_BGR2RGB)
+                processed_frames.append(rgb_frame)
+                
+                if i % 100 == 0:
+                    print(f"\r🎥 Processed {i}/{len(crop_windows)} frames", end='', flush=True)
             
-            if i % 100 == 0:
-                print(f"\r🎥 Processed {i}/{len(crop_windows)} frames for output video", end='', flush=True)
-        
-        # Release resources
-        if self.writer:
-            self.writer.release()
-
-        # Merge audio
-        self.merge_audio(output_path, self.video_info['path'])
-
-        self.convert_to_h264(output_path)
+            print(f"\n✅ Successfully processed {len(processed_frames)} frames")
+            
+            # Extract and save audio separately for debugging
+            print("Extracting audio for debugging...")
+            if original_video.audio is not None:
+                audio_path = output_path.replace('.mp4', '_audio.wav')
+                original_video.audio.write_audiofile(audio_path)
+                print(f"✅ Audio extracted to: {audio_path}")
+                print(f"Audio info: {original_video.audio.duration:.2f}s, {original_video.audio.fps} Hz")
+            else:
+                print("❌ No audio found in original video")
+            
+            # Create MoviePy clip from processed frames
+            from moviepy.video.io.ImageSequenceClip import ImageSequenceClip
+            processed_video = ImageSequenceClip(processed_frames, fps=fps)
+            
+            # Add audio from original video
+            print("Adding audio to processed video...")
+            if original_video.audio is not None:
+                print(f"Audio found: {original_video.audio.duration:.2f}s")
+                # Create final video with audio by setting the audio attribute
+                final_video = processed_video
+                final_video.audio = original_video.audio
+                print(f"Audio added: {original_video.audio.duration:.2f}s")
+            else:
+                print("No audio found in original video")
+                final_video = processed_video
+            
+            # Write the final video with H.264 video and AAC audio
+            print("Writing final video with MoviePy...")
+            final_video.write_videofile(
+                output_path,
+                codec='libx264',
+                audio_codec='aac',
+                fps=fps
+            )
+            
+            # Clean up
+            original_video.close()
+            processed_video.close()
+            
+            # Verify output file exists and has content
+            if os.path.exists(output_path):
+                file_size = os.path.getsize(output_path)
+                if file_size > 0:
+                    print(f"✅ Video processing completed successfully! Output: {output_path} ({file_size} bytes)")
+                else:
+                    raise RuntimeError("Output file is empty")
+            else:
+                raise RuntimeError("Output file was not created")
+                
+        except Exception as e:
+            print(f"❌ Error in MoviePy video processing: {e}")
+            # Clean up output file if it exists
+            if os.path.exists(output_path):
+                os.remove(output_path)
+            raise
 
     
     def __del__(self):

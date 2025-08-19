@@ -24,6 +24,10 @@ env/
 .installed.cfg
 *.egg
 
+# Models
+python/models/
+python/models/yolo*
+
 # Node
 node_modules/
 npm-debug.log*

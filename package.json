@@ -19,7 +19,8 @@
     "build:win": "npm run clean && npm run build:css && electron-builder build --win",
     "build:linux": "npm run clean && npm run build:css && electron-builder build --linux",
     "postinstall": "electron-builder install-app-deps",
-    "test:frontend": "playwright test tests/frontend"
+    "test:frontend": "playwright test tests/frontend",
+    "test:xcode": "node scripts/test_xcode_detection.js"
   },
   "build": {
     "appId": "com.reframe.app",
@@ -71,7 +72,12 @@
     ],
     "mac": {
       "category": "public.app-category.video",
-      "target": ["dmg"],
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["arm64"]
+        }
+      ],
       "icon": "build/icon.icns",
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
