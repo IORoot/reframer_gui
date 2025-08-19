@@ -30,6 +30,11 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           CSC_IDENTITY_AUTO_DISCOVERY: true
+          # Prevent Electron Builder from trying to publish to GitHub
+          GH_TOKEN: ""
+          GITHUB_TOKEN: ""
+          # Disable CI detection for publishing
+          CI: false
         run: npm run build:mac
 
       - name: Upload build artifacts
